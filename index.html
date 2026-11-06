@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Never Losing My Notes — Obsidian Brown Bag</title>
+
+<!--
+  ============================================================================
+  HOW THIS FILE IS ORGANISED (read this first)
+  ============================================================================
+  1. <style> block        — all CSS. Organised in the same order as the
+                             Obsidian/reveal.js version: tokens, stage/engine,
+                             then one block per slide "type" (chevlist, callout
+                             box, divider, demo split-panel, chapter rail, etc).
+  2. <body>
+       - background layers (purely decorative, fixed, behind everything)
+       - #stage            — the fixed 1280x720 canvas every slide lives in.
+                             This mirrors the Obsidian deck's "pin everything
+                             to a fixed frame" approach, but instead of
+                             reveal.js scaling the frame for us, a tiny JS
+                             function (fit()) does it by hand — see the
+                             <script> block, function fit().
+       - #chapter-rail      — the JS-built vertical progress rail (left edge),
+                             equivalent to the hand-coded .chapter-rail markup
+                             that was repeated on every slide in the .md file.
+                             Built ONCE from the CHAPTERS array in <script>.
+       - #count             — "N / TOTAL" slide counter, top-right.
+       - one <section class="slide"> per slide, in deck order. Each section
+         carries data-ch="<chapter index>" so the rail/engine know which
+         chapter it belongs to. This is the direct equivalent of one slide
+         between "---" separators in the .md file.
+  3. <script> block        — the paging engine: shows/hides slides, walks
+                             "reveal steps" within a slide (data-s attribues,
+                             equivalent to reveal.js .fragment), and rebuilds
+                             the chapter rail's active/traveled state.
+
+  ============================================================================
+  HOW TO EDIT SLIDE TEXT / CONTENT
+  ============================================================================
+  - Every slide is a self-contained section.slide block, in the same order
+    as the original deck, each preceded by a comment banner such as
+    "SLIDE 6 - Foundation / What is Obsidian?". Find the banner, edit the
+    text inside. You do not need to touch the style or script blocks for
+    ordinary text edits.
+  - Chapter dividers, the cover, and demo slides are visually distinct slide
+    "types" (see the CSS section headers below) — copy an existing slide of
+    the same type as your starting point if you add a new one.
+  - If you ADD or REMOVE a slide, update the CHAPTERS array's slide ranges
+    are NOT needed (unlike the old --i/--n system!) — the rail now walks the
+    live DOM (document.querySelectorAll('.slide')) every time it renders, so
+    counts and positions are always automatically correct. This is one of
+    the main advantages of this standalone rebuild over the old hand-numbered
+    --i/--n CSS system.
+  - Images: reference them as "images/filename.png" (a flat folder called
+    images/ that must sit next to this HTML file). Drop your exported
+    Itecor/Obsidian assets in there with the same filenames used below and
+    they will resolve automatically. If an image is still missing, the
+    layout will just show a broken-image icon in that slot — nothing else
+    on the slide breaks.
+  ============================================================================
+-->
+
+<style>
+/* ==========================================================================
+   1. COLOR + LAYOUT TOKENS
+   Same palette as the Obsidian deck (Itecor brand). --ac is the ONE color
+   that changes per-chapter (set by JS on <html> at render time) and drives
+   the rail dot, the kicker dot, and any "accent" highlight on the slide.
+   ========================================================================== */
+:root{
+  --accent1:#FE5000;   /* Itecor orange — primary accent, chevrons, titles */
+  --accent3:#00C19F;   /* teal — callout box background */
+  --dark2:#333F48;     /* navy — body text, dark panels */
+  --lt2:#E7E6E6;       /* light grey — code background */
+  --paper:#FFFFFF;     /* card / slide background on light slides */
+  --muted:#6b7280;     /* muted grey footnote text */
+
+  --ac:#FE5000;        /* CURRENT chapter accent — overwritten by JS per-slide.
+                           Defaults to orange (Intro chapter). */
+
+  --stage-w:1280px;
+  --stage-h:720px;
+}
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+html,body{ height:100%; background:#0c0c0c; overflow:hidden; }
+body{ font-family:Arial, Helvetica, sans-serif; color:var(--dark2); }
+
+/* ==========================================================================
+   2. STAGE / SCALING ENGINE
+   A fixed 1280x720 canvas, centered in the viewport and uniformly scaled to
+   fit (see fit() in <script>). Every slide is absolutely positioned INSIDE
+   this canvas, so pixel values behave identically to the old reveal.js deck
+   regardless of the visitor's actual window size.
+   ========================================================================== */
+#stage{
+  position:fixed;
+  left:50%; top:50%;
+  width:var(--stage-w); height:var(--stage-h);
+  transform:translate(-50%,-50%) scale(1); /* scale is rewritten by fit() */
+  background:var(--paper);
+  box-shadow:0 40px 120px rgba(0,0,0,0.5);
+  overflow:hidden;
+}
+
+/* ==========================================================================
+   3. SLIDE BASE — every <section class="slide"> stacks in the same spot;
+   only the "on" one is visible. This replaces reveal.js's slide-changing
+   entirely: nothing physically moves, we just swap opacity/visibility,
+   exactly like the reference site's .sl / .sl.on pattern.
+   ========================================================================== */
+.slide{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  padding:0 2.2em 2.2em 2.2em;
+  opacity:0; visibility:hidden;
+  transition:opacity .45s ease;
+  background:var(--paper);
+}
+.slide.on{ opacity:1; visibility:visible; }
+
+/* Slides that reserve left space for the chapter rail (i.e. everything
+   except cover / dividers / demo panels) get extra left padding so body
+   copy never sits under the rail. Applied per-slide via .with-rail.
+   Widened (5.4em -> 13.4em) to clear the new, wider full-chapter-list
+   rail (11em wide, starting 1.6em from the stage edge). */
+.slide.with-rail{ padding-left:13.4em; }
+
+/* ==========================================================================
+   4. PINNED SLIDE TITLE ("content-title") — same visual role as in the
+   Obsidian deck: an orange, underlined h3 pinned near the top-left of every
+   regular content slide so titles line up slide-to-slide.
+   SIZE/POSITION: enlarged again per feedback (was 2.1em, now 2.8em) — still
+   top-left anchored (not centered), just bigger so it reads as a real
+   headline rather than a small label.
+   ========================================================================== */
+.content-title{
+  position:absolute;
+  top:0.8em; left:13.4em;
+  max-width:85%;
+  color:var(--accent1);
+  font-weight:700;
+  font-size:2.8em;
+  line-height:1.15;
+  padding-bottom:0.2em;
+  border-bottom:4px solid var(--accent1);
+  z-index:5;
+}
+
+/* Body content wrapper: sits below the pinned title and spans the full
+   remaining slide height/width — vertically CENTERED by default so short
+   content (a couple of lines, a 3-4 item list) uses the whole slide
+   instead of collapsing to the top with empty space below.
+   NOTE: earlier versions applied a ".top-align" modifier to most slides
+   (originally meant only for slides where a growing reveal-list might
+   visually "jump" if centered) — that modifier ended up on nearly every
+   slide and is what caused the "hugs the top, empty at the bottom" bug.
+   It has been removed from the markup below; .top-align still exists as
+   an escape hatch for a future slide that specifically needs it, but is
+   no longer used by default. */
+.slide-body{
+  position:absolute;
+  top:6.4em; left:13.4em; right:3.2em; bottom:2.6em;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  gap:1.1em;
+}
+/* Escape hatch (opt-in only, not applied anywhere by default any more):
+   pins body content to the top of its box instead of centering it. */
+.slide-body.top-align{ justify-content:flex-start; padding-top:0.4em; }
+
+/* Chevron lists read better left-aligned even when the surrounding body
+   box is centering things (a centered bullet list looks odd — bullets
+   should line up vertically). This class is added alongside .chevlist in
+   the markup below to opt back into left alignment for just that list,
+   while still being horizontally CENTERED as a block within the slide
+   (auto margins) rather than pinned to the left edge. */
+.slide-body ul.chevlist{ text-align:left; margin:0 auto; }
+
+/* Text and lists inside the body: font sizes increased again (now the
+   biggest pass yet — 1.6em -> 2.1em) and max-width widened, now that the
+   container both centers AND fills the full vertical height, so slides
+   read as confident full-bleed statements rather than a cramped corner
+   of text. */
+.slide p{ font-size:2.1em; line-height:1.5; color:var(--dark2); max-width:1050px; }
+.slide b{ color:var(--dark2); }
+.subtitle2{ color:var(--muted); font-size:0.6em; font-weight:400; }
+code{ background:var(--lt2); color:var(--dark2); padding:0.15em 0.45em; border-radius:4px; font-size:0.75em; font-family:'Geist Mono', 'Courier New', monospace; }
+
+/* ==========================================================================
+   5. CHEVRON BULLET LIST — same look as .chevlist in the original deck.
+   Font size increased again (1.7em -> 2.1em) and vertical gap between
+   items opened up (0.75em -> 1em) so a short list (e.g. 3-5 items) reads
+   as a set of real statements spread through the slide, not a compressed
+   block sitting in a corner.
+   ========================================================================== */
+ul.chevlist{ list-style:none; padding-left:0; max-width:1050px; }
+ul.chevlist > li{
+  position:relative; padding-left:1.7em; margin-bottom:1em;
+  font-size:2.1em; color:var(--dark2);
+  opacity:0; transform:translateY(8px);
+  transition:opacity .4s ease, transform .4s ease;
+}
+ul.chevlist > li.on{ opacity:1; transform:translateY(0); }
+ul.chevlist > li::before{
+  content:"›"; color:var(--accent1); font-weight:700;
+  position:absolute; left:0;
+}
+
+/* ==========================================================================
+   6. CALLOUT BOX — teal box used for "payoff" lines. Font size increased
+   again to match the larger body text elsewhere on the slide.
+   ========================================================================== */
+.calloutbox{
+  border:2px solid var(--accent3);
+  background:var(--accent3);
+  border-radius:16px;
+  padding:1em 1.4em;
+  display:inline-block;
+  max-width:1050px;
+  color:#fff;
+  opacity:0; transform:translateY(8px);
+  transition:opacity .4s ease, transform .4s ease;
+}
+.calloutbox.on{ opacity:1; transform:translateY(0); }
+.calloutbox p{ color:#fff; margin:0; font-weight:700; font-size:1em; max-width:none; }
+
+/* Generic step-reveal utility for any element that isn't a chevlist item or
+   callout box (paragraphs, images, etc.) — same "data-s" step mechanism. */
+.reveal-step{
+  opacity:0; transform:translateY(8px);
+  transition:opacity .4s ease, transform .4s ease;
+}
+.reveal-step.on{ opacity:1; transform:translateY(0); }
+
+/* Muted footnote / orange payoff line reused from the original deck. */
+.note-gray{ font-size:0.85em; color:var(--muted); }
+.note-accent{ font-size:1em; font-weight:500; color:var(--accent1); }
+
+/* ==========================================================================
+   7. FOOTER BAR + LOGO + SLIDE NUMBER
+   Present on every regular content slide (not on cover/divider/demo, which
+   have their own light-on-dark footer treatment).
+   ========================================================================== */
+.footerbar{
+  position:absolute; left:50%; bottom:0.7em;
+  transform:translateX(-50%);
+  font-size:0.75em; font-weight:700; color:var(--dark2);
+  white-space:nowrap; z-index:2;
+}
+.footerbar .chev{ color:var(--accent1); margin:0 0.3em; }
+
+.footer-logo{
+  position:absolute; left:1.2em; bottom:0.6em;
+  height:1.3em; z-index:2;
+}
+
+.corner-triangle{
+  position:absolute; right:0; bottom:0.5em;
+  width:0; height:0;
+  border-style:solid;
+  border-width:15px 22px 15px 0;
+  border-color:transparent var(--accent1) transparent transparent;
+  z-index:2;
+}
+
+/* ==========================================================================
+   8. CHAPTER RAIL (left-edge progress rail) — REDESIGNED.
+   Built once by JS from the CHAPTERS array (see <script>). Previous version
+   showed only the CURRENT chapter's label, floating at a position computed
+   from overall slide progress. New version shows the full chapter list at
+   all times (grey by default), bolds/darkens whichever chapter is active,
+   and still slides a small chevron marker down the connecting line to
+   show fine-grained progress through the whole deck. Each chapter label is
+   a clickable <button> that jumps straight to that chapter's first slide.
+   ========================================================================== */
+#chapter-rail{
+  position:fixed;
+  left:calc(50% - (var(--stage-w) / 2) + 1.6em);
+  top:calc(50% - (var(--stage-h) * 0.36));
+  height:calc(var(--stage-h) * 0.72);
+  width:11em;
+  z-index:40;
+  /* Soft plate behind the whole rail so labels stay legible even when the
+     current slide is a full-bleed photo (cover/divider) sitting right
+     behind it. */
+  background:rgba(255,255,255,0.82);
+  border-radius:12px;
+  backdrop-filter:blur(2px);
+}
+/* ALIGNMENT STRATEGY (deliberately simple, to avoid the padding/margin
+   fudge-factor alignment bugs the old --i/--n rail in the Obsidian deck
+   kept running into): every element that needs to sit ON the line — the
+   line itself, the fill, the traveling marker, AND every chapter dot — is
+   absolutely positioned with the exact SAME "left" value (LINE_X, defined
+   once below as a value, repeated on each rule). None of them depend on
+   flexbox centering, margins, or nested padding to line up; they simply
+   all read the same number. If you ever need to move the line
+   horizontally, change LINE_X in these four places (search "LINE_X").
+   ========================================================================== */
+#chapter-rail::before{
+  /* LINE_X = 1.7em */
+  content:"";
+  position:absolute; left:1.7em; top:0.9em; bottom:0.9em; width:2px;
+  background:#dcdcdc;
+}
+#chapter-rail .rail-fill{
+  /* LINE_X = 1.7em */
+  position:absolute; left:1.7em; top:0.9em; width:2px;
+  background:var(--accent1);
+  transition:height .35s ease;
+}
+/* Small chevron marker that travels continuously along the line based on
+   exact slide progress (not snapped to a chapter dot) — this is what
+   preserves the original "descending progress" feel while the labels
+   below give the full map. */
+#chapter-rail .rail-marker{
+  /* LINE_X = 1.7em */
+  position:absolute; left:1.7em; width:0.8em; height:0.8em;
+  transform:translate(-50%,-50%);
+  transition:top .35s ease;
+  color:var(--accent1);
+  z-index:2;
+}
+#chapter-rail .rail-marker svg{ width:100%; height:100%; }
+
+/* Chapter list: one row per chapter, stacked top to bottom. Each row is
+   positioned by the flexbox below (for even vertical spacing only) but
+   its DOT is pulled out via position:absolute and pinned to the exact
+   same LINE_X used above, so horizontal alignment can never drift no
+   matter how the row's own padding/gap changes. */
+#chapter-rail .rail-chapters{
+  position:relative;
+  height:100%;
+  padding:0.9em 0.8em 0.9em 0;
+  box-sizing:border-box;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+#chapter-rail .rail-chapter{
+  position:relative;
+  display:block;
+  background:none; border:none; cursor:pointer;
+  padding:0.3em 0 0.3em 2.5em; /* left padding reserves room for the absolutely-positioned dot */
+  text-align:left;
+  font-family:inherit;
+  width:100%;
+}
+/* The dot marking this chapter's position on the line — absolutely
+   positioned so its center sits exactly at LINE_X (1.7em), matching the
+   line/fill/marker above with no dependence on this button's own padding
+   or the flex layout around it. */
+#chapter-rail .rail-chapter .dot{
+  position:absolute;
+  left:1.7em; top:50%;
+  transform:translate(-50%,-50%);
+  width:0.62em; height:0.62em;
+  border-radius:50%;
+  background:#fff;
+  border:2px solid #c9c9c9;
+  transition:background .3s ease, border-color .3s ease;
+}
+#chapter-rail .rail-chapter .lbl{
+  font-size:0.78em; font-weight:600; letter-spacing:0.02em;
+  color:#9aa0a6; /* grey = not the current chapter */
+  transition:color .3s ease, font-weight .3s ease;
+  white-space:nowrap;
+}
+/* Past chapters (already visited): dot filled solid, label a bit darker
+   than the default grey but still clearly secondary to the active one. */
+#chapter-rail .rail-chapter.past .dot{ background:var(--accent1); border-color:var(--accent1); }
+#chapter-rail .rail-chapter.past .lbl{ color:#6b7280; }
+/* The CURRENT chapter: dot glows, label goes dark/bold — this is the
+   "only the current chapter in dark black" behavior requested. */
+#chapter-rail .rail-chapter.now .dot{
+  background:var(--accent1); border-color:var(--accent1);
+  box-shadow:0 0 0 4px rgba(254,80,0,0.18);
+}
+#chapter-rail .rail-chapter.now .lbl{ color:var(--dark2); font-weight:800; }
+#chapter-rail .rail-chapter:hover .lbl{ color:var(--dark2); }
+
+/* ==========================================================================
+   9. SLIDE COUNTER — bottom-right, next to the corner triangle (moved here
+   per feedback; originally top-right, but the Obsidian deck always kept
+   its slide number at the bottom, matching the footer row).
+   ========================================================================== */
+#count{
+  position:absolute; right:2.6em; bottom:0.75em;
+  font-size:0.85em; font-weight:600; letter-spacing:0.05em;
+  color:var(--muted); z-index:40;
+}
+#count b{ color:var(--dark2); }
+/* On dark slide types (cover/divider) the counter needs to switch to a
+   light color to stay readable. #count is a SIBLING of .slide (both live
+   directly in #stage), not a descendant, so plain CSS can't target it
+   based on "which slide is currently .on" — the JS render() function
+   toggles this class instead. See <script> block. */
+#count.on-dark{ color:rgba(255,255,255,0.75); }
+#count.on-dark b{ color:#fff; }
+
+/* ==========================================================================
+   10. COVER SLIDE
+   FIX: the full-bleed background photo (image4.jpeg in the original deck)
+   was never actually wired up here before — only the dark scrim gradient
+   was present, with var(--dark2) as a flat-color fallback behind it. Now
+   the real photo is layered underneath the same scrim via the background
+   shorthand's multiple-layer syntax (gradient on top, image below it).
+   If images/image4.jpeg is missing this still degrades gracefully to the
+   flat navy color.
+   ========================================================================== */
+.slide.cover{
+  background:
+    linear-gradient(rgba(10,10,15,0.5), rgba(10,10,15,0.5)),
+    url("images/image4.jpeg") center / cover no-repeat,
+    var(--dark2);
+  color:#fff; padding:0;
+}
+.slide.cover .cover-logo{
+  position:absolute; bottom:38%; left:8%; max-width:26%;
+}
+.slide.cover .cover-text{
+  position:absolute; bottom:1.6em; left:1em; max-width:75%;
+}
+.cover-title{
+  font-weight:700; font-size:4.4em; color:var(--accent1);
+  text-align:left; margin-bottom:0.15em; line-height:1.05;
+}
+.cover-subtitle{
+  color:#f0f0f0; text-align:left; font-size:1.15em; font-weight:400;
+}
+.title-meta{
+  position:absolute; right:1.2em; bottom:1.2em;
+  font-size:1em; color:#fff; text-align:right; line-height:1.4;
+}
+
+/* ==========================================================================
+   11. DIVIDER (CHAPTER OPENER) SLIDE
+   Full-bleed color panel, big chapter number, no rail shown on these.
+   FIX: each chapter divider uses a DIFFERENT background photo in the
+   original deck (image16.jpg for Foundation, image11.jpeg for Structure,
+   etc.), so unlike the cover there's no single shared background-image
+   rule here — instead .slide.divider gets a flat navy FALLBACK color only,
+   and each individual divider <section> below sets its own
+   background-image inline via style="background-image:url(...)". The
+   .scrim div (dark semi-transparent overlay) keeps the white title text
+   readable over any photo.
+   ========================================================================== */
+.slide.divider{
+  background-color:var(--dark2);
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+  color:#fff; padding:0;
+}
+.divider .scrim{ position:absolute; inset:0; background:rgba(10,10,15,0.35); }
+.divider-wrap{
+  position:absolute; inset:0; display:flex; align-items:center;
+  justify-content:space-between; padding:0 1.6em;
+}
+.divider-left{ max-width:56%; position:relative; z-index:1; }
+.sectiontitle{ font-size:3.2em; font-weight:700; margin:0 0 0.2em 0; color:var(--accent1); }
+.sectionsub{ font-size:1.2em; font-weight:400; color:#fff; opacity:0.92; }
+.sectionnum{
+  font-size:14em; font-weight:700; color:#fff; opacity:0.85;
+  line-height:1; flex-shrink:0; position:relative; z-index:1;
+  transform:translateY(-0.05em);
+}
+.divider .footer-logo, .divider .footerbar{ color:#fff; }
+.divider .chevron-badge{
+  position:absolute; bottom:0.9em; right:0.9em;
+  width:3.4em; height:3.4em; color:var(--accent1); z-index:1;
+}
+.divider .chevron-badge svg{ width:100%; height:100%; }
+
+/* ==========================================================================
+   12. DEMO SLIDE — split panel (dark left / white right), same as original.
+   Text sizes increased (demo-label 2.6em -> 4em, demo-list 1.2em -> 2em)
+   to match the larger-text pass applied to regular content slides —
+   previously this slide type was overlooked and stayed at the old small
+   sizes.
+   ========================================================================== */
+.slide.demo{ padding:0; }
+.demo-left{
+  position:absolute; top:0; bottom:0; left:0; width:50%;
+  background:var(--dark2); color:#fff;
+  display:flex; align-items:center; padding-left:1.6em;
+}
+.demo-right{
+  position:absolute; top:0; bottom:0; right:0; width:50%;
+  background:#fff;
+  display:flex; align-items:center; padding-left:3.2em;
+}
+.demo-label{ font-size:4em; font-weight:800; letter-spacing:0.02em; color:var(--accent1); }
+.demo-list{ list-style:none; text-align:left; font-size:2em; color:var(--dark2); }
+.demo-list li{ margin-bottom:0.6em; }
+.demo-list li::before{ content:"›"; color:var(--accent1); font-weight:700; margin-right:0.5em; }
+.demo-chevron-big{
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:4.5em; height:4.5em; color:var(--accent1); z-index:2;
+}
+.demo-chevron-big svg{ width:100%; height:100%; }
+.demo .footer-logo{ z-index:3; }
+
+/* ==========================================================================
+   13. BACKGROUND / DECORATIVE IMAGES ON CONTENT SLIDES
+   FIX: these were far too small (8em/10em wide, ~130-160px) to read as
+   background art — enlarged substantially (now 22em/26em, roughly
+   350-420px) so they act as a real decorative presence on the right side
+   of the slide, similar in scale to the original deck's hex-bg treatment.
+   Kept low-opacity and z-index:0 (behind all text) so they never fight
+   with body copy for attention or legibility.
+   ========================================================================== */
+.img-bg{
+  position:absolute; right:-1.5em; top:50%; transform:translateY(-50%);
+  width:22em; opacity:0.18; z-index:0; pointer-events:none;
+}
+.img2-bg{
+  position:absolute; right:-1.5em; top:50%; transform:translateY(-45%);
+  width:26em; opacity:0.5; z-index:0; pointer-events:none;
+}
+
+/* ==========================================================================
+   RESPONSIVE NOTE: the #stage element is scaled as a whole unit by fit(),
+   so nothing in this file needs a media query — a phone and a projector
+   both just get a smaller/larger version of the same fixed 1280x720 canvas.
+   ========================================================================== */
+</style>
+</head>
+<body>
+
+<!-- The fixed-size canvas. All slides live inside here. -->
+<div id="stage">
+
+  <!-- Left-edge chapter progress rail; content injected by JS. -->
+  <div id="chapter-rail"></div>
+
+  <!-- Slide counter, top-right. -->
+  <div id="count"><b id="count-cur">1</b>&nbsp;/&nbsp;<span id="count-total">1</span></div>
+
+
+  <!-- ================================================================
+       SLIDE 1 — COVER
+       ================================================================ -->
+  <section class="slide cover on" data-ch="0">
+    <img src="images/image7.png" class="cover-logo" alt="Itecor logo">
+    <div class="cover-text">
+      <h1 class="cover-title">Never Losing My Notes</h1>
+      <p class="cover-subtitle">How I built my notes to be found — powered by Obsidian</p>
+    </div>
+    <div class="title-meta">Presenter Name<br>Date</div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 2 — Intro / The thesis
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="0">
+    <h3 class="content-title">The thesis</h3>
+    <div class="slide-body">
+      <!-- This is the single sentence the whole talk answers — deliberately
+           the LARGEST text in the deck (bigger than the default .slide p
+           size), set inline here rather than via the shared class since
+           no other slide should automatically inherit this exact size. -->
+      <p style="font-size:2.6em; font-weight:700; max-width:1050px;">
+        A note-taking app is only as good as
+        <span style="color:var(--accent1);">getting information back out.</span>
+      </p>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 3 — Intro / The familiar pain
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="0">
+    <h3 class="content-title">The familiar pain</h3>
+    <div class="slide-body">
+      <div class="calloutbox reveal-step" data-s="0">
+        <p>The app makes <i>you</i> adapt to its structure — not the other way around.</p>
+      </div>
+      <p class="reveal-step" data-s="1" style="margin-top:0.6em;">
+        So if you don't already remember <i>where</i> you filed it, you will never find it again.
+      </p>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 4 — Intro / Where we're headed
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="0">
+    <h3 class="content-title">Where we're headed</h3>
+    <div class="slide-body">
+      <ul class="chevlist">
+        <li data-s="0"><b>2</b> — Foundation / the raw materials</li>
+        <li data-s="1"><b>3</b> — Structure / hubs &amp; schema</li>
+        <li data-s="2"><b>4</b> — Architecture &amp; rhythm</li>
+        <li data-s="3"><b>5</b> — AI, the capstone</li>
+        <li data-s="4"><b>6</b> — Reality check &amp; close</li>
+      </ul>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 5 — CHAPTER DIVIDER: Foundation
+       Background photo set inline below (image16.jpg, matching the
+       original deck's divider for this chapter) — edit the url(...) here
+       to swap the photo for this specific divider.
+       ================================================================ -->
+  <section class="slide divider" data-ch="1" style="background-image:url('images/image16.jpg');">
+    <div class="scrim"></div>
+    <div class="divider-wrap">
+      <div class="divider-left">
+        <h2 class="sectiontitle">Foundation</h2>
+        <p class="sectionsub">The raw materials</p>
+      </div>
+      <div class="sectionnum">2</div>
+    </div>
+    <img src="images/image7.png" class="footer-logo" alt="itecor" style="z-index:1;">
+    <div class="chevron-badge">
+      <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
+    </div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 6 — Foundation / What is Obsidian?
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="1">
+    <h3 class="content-title">What is Obsidian?</h3>
+    <img src="images/Obsidian_Logo.jpg" class="img-bg" alt="">
+    <div class="slide-body">
+      <p><b>Obsidian</b> — a free, local-first note-taking app.</p>
+      <ul class="chevlist">
+        <li data-s="0">Notes are markdown files stored on your own disk</li>
+        <li data-s="1">Based on hyperlinks and tags</li>
+        <li data-s="2">Extensible through community plugins</li>
+        <li data-s="3">Even this presentation is built in it</li>
+      </ul>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 7 — Foundation / Notes built to last
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="1">
+    <h3 class="content-title">Notes built to last</h3>
+    <div class="slide-body">
+      <ul class="chevlist">
+        <li data-s="0">Every note is a markdown file on your disk</li>
+        <li data-s="1">Private — your data, your machine</li>
+        <li data-s="2">Durable — readable in 20 years, by anything</li>
+      </ul>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 8 — Foundation / Quick, organised, open (Markdown)
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="1">
+    <h3 class="content-title">Quick, organised, open.</h3>
+    <img src="images/MarkdownImage.png" class="img-bg" alt="">
+    <div class="slide-body">
+      <p>Markdown is just text with light formatting marks — no proprietary format, no lock-in, opens in literally anything.</p>
+      <p class="reveal-step" data-s="0">
+        <code># Heading</code> &nbsp; <code>**bold**</code> &nbsp; <code>- list item</code><br>
+        <code>- [ ] checkbox</code> <code>&gt; [!callout]</code>
+      </p>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 9 — Foundation / Connect ideas as you write (Links)
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="1">
+    <h3 class="content-title">Connect ideas as you write</h3>
+    <img src="images/LinksBetweenNotes.jpg" class="img-bg" alt="">
+    <div class="slide-body">
+      <p>Type <code>[[note name]]</code> and two notes are <b>linked</b>.</p>
+      <p>No folder decision required — every link is a small act of retrieval, waiting for later.</p>
+      <p class="reveal-step" data-s="0">Add <code>#tag</code> to further connect the concepts.</p>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 10 — Foundation / Classify every note the same way (Properties)
+       ================================================================ -->
+  <section class="slide with-rail" data-ch="1">
+    <h3 class="content-title">Classify every note the same way</h3>
+    <div class="slide-body">
+      <p>Every note can carry <b>properties</b> — simple key : value pairs at the top of the file (YAML frontmatter).</p>
+      <div class="calloutbox reveal-step" data-s="0">
+        <p>Same shape every time → easy to filter and query later.</p>
+      </div>
+    </div>
+    <img src="images/image1.png" class="footer-logo" alt="itecor">
+    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
+    <div class="corner-triangle"></div>
+  </section>
+
+
+  <!-- ================================================================
+       SLIDE 11 — DEMO: Foundation recap
+       ================================================================ -->
+  <section class="slide demo" data-ch="1">
+    <div class="demo-left">
+      <div class="demo-label">Demo</div>
+    </div>
+    <div class="demo-right">
+      <ul class="demo-list">
+        <li>Markdown</li>
+        <li>Links and tags</li>
+        <li>Properties</li>
+      </ul>
+    </div>
+    <div class="demo-chevron-big">
+      <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
+    </div>
+    <!-- image7.png is already the LIGHT/white-on-transparent logo variant
+         (per Itecor asset naming), so no CSS filter is applied here — a
+         previous version incorrectly ran filter:invert(1) brightness(2)
+         on it, which distorted its real colors. Left plain so it renders
+         exactly as exported. -->
+    <img src="images/image7.png" class="footer-logo" alt="itecor" style="z-index:3;">
+  </section>
+
+</div><!-- /#stage -->
+
+<script>
+/* ============================================================================
+   PAGING + CHAPTER-RAIL ENGINE
+   Direct structural port of the reference site's engine (moon-phase rail +
+   fade-step reveal + fixed-canvas scaling), adapted to Itecor's visual
+   language. Nothing here needs to change when you edit slide TEXT — only
+   touch this if you are adding a new chapter or changing how paging works.
+   ============================================================================ */
+
+// ---- 1. CHAPTERS ----------------------------------------------------------
+// One entry per chapter shown on the rail. `match` is the data-ch value used
+// on <section data-ch="N"> above. Order here = order on the rail (top to
+// bottom). Add a chapter by adding a row here — nothing else to renumber.
+const CHAPTERS = [
+  { match: 0, label: 'Intro',       ac: '#FE5000' },
+  { match: 1, label: 'Foundation',  ac: '#FE5000' },
+  // Structure / Architecture / AI / Conclusion chapters will be appended
+  // here in the next pass once Chapter 2 is approved.
+];
+
+const slides = [...document.querySelectorAll('.slide')];
+const railEl = document.getElementById('chapter-rail');
+
+// ---- 2. BUILD THE RAIL (once) ---------------------------------------------
+// REDESIGNED: instead of showing only the current chapter's name, the rail
+// now lists EVERY chapter at all times (see .rail-chapters below), plus a
+// thin connecting line with a small chevron that still slides continuously
+// to reflect exact progress through the whole deck. Each chapter row is a
+// real <button> so it can be clicked to jump straight to that chapter.
+railEl.innerHTML = `
+  <div class="rail-fill" id="rail-fill"></div>
+  <div class="rail-marker" id="rail-marker">
+    <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
+  </div>
+  <div class="rail-chapters" id="rail-chapters">
+    ${CHAPTERS.map((c, i) => `
+      <button class="rail-chapter" data-chapter-index="${i}" type="button">
+        <span class="dot"></span>
+        <span class="lbl">${c.label}</span>
+      </button>
+    `).join('')}
+  </div>
+`;
+const railFill     = document.getElementById('rail-fill');
+const railMarker    = document.getElementById('rail-marker');
+const railChapters  = [...document.querySelectorAll('.rail-chapter')];
+
+// Clicking a chapter row jumps to that chapter's FIRST slide.
+railChapters.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const chIdx = +btn.dataset.chapterIndex;
+    const target = slides.findIndex(s => +s.dataset.ch === chIdx);
+    if (target !== -1) go(target, 0);
+  });
+});
+
+// ---- 3. STATE ---------------------------------------------------------------
+let cur = 0;   // current slide index
+let step = 0;  // current reveal-step within that slide
+
+// How many reveal-steps does a slide have? (highest data-s + 1, or 0 if none)
+function maxStep(slide){
+  const stepEls = slide.querySelectorAll('[data-s]');
+  let m = -1;
+  stepEls.forEach(el => { m = Math.max(m, +el.dataset.s); });
+  return m + 1; // number of steps (0 if no [data-s] elements at all)
+}
+
+// ---- 4. RENDER ---------------------------------------------------------------
+function render(){
+  const slide = slides[cur];
+  const ch = +slide.dataset.ch;
+  const chInfo = CHAPTERS[ch] || CHAPTERS[0];
+
+  // Per-chapter accent color, used by .content-title, chevlist bullets, etc.
+  document.documentElement.style.setProperty('--ac', chInfo.ac);
+
+  // Show/hide slides.
+  slides.forEach((s, i) => s.classList.toggle('on', i === cur));
+
+  // Slide counter.
+  document.getElementById('count-cur').textContent = cur + 1;
+  document.getElementById('count-total').textContent = slides.length;
+
+  // Walk reveal-steps: anything with data-s <= current step gets "on".
+  slide.querySelectorAll('[data-s]').forEach(el => {
+    el.classList.toggle('on', step >= +el.dataset.s);
+  });
+
+  // Chapter rail: ALWAYS visible now (previously hidden on cover/divider/
+  // demo slides — the old rail only made sense mid-chapter since it showed
+  // just one floating label, but the new full chapter-list version reads
+  // fine on every slide type, including dividers, since it now doubles as
+  // a persistent "where am I in the whole talk" map).
+  //
+  // Two things get updated:
+  //  1. Each .rail-chapter row gets .past (already gone through) or .now
+  //     (this is the active chapter) so its dot/label styling updates.
+  //  2. The thin connecting line + chevron marker still slide to a
+  //     continuous position based on (slides seen so far / total slides)
+  //     — this preserves the fine-grained "how far into the WHOLE deck"
+  //     feel, layered on top of the coarser per-chapter list.
+  railChapters.forEach((btn, i) => {
+    btn.classList.toggle('now', i === ch);
+    btn.classList.toggle('past', i < ch);
+  });
+  // Pixel-accurate line/marker position: the visible line runs from
+  // 0.9em to (rail height - 0.9em) per the CSS (top:0.9em; bottom:0.9em
+  // on #chapter-rail::before) — computing a plain percentage of the FULL
+  // rail height would place the marker slightly outside that visible
+  // range at the very top/bottom of the deck. Reading the rail's actual
+  // rendered height here and subtracting the same 0.9em inset on both
+  // ends keeps the marker exactly on the line at all times, including at
+  // slide 1 and the final slide.
+  const railRect = railEl.getBoundingClientRect();
+  const inset = 0.9 * 16; // 0.9em in px, assuming the default 16px root font-size
+  const usableHeight = railRect.height - inset * 2;
+  const pct = (cur + 1) / slides.length; // 0..1, "how far through the whole deck"
+  const fillPx = usableHeight * pct; // .rail-fill's OWN top is already offset by `inset` in CSS, so its height is measured from there, not from 0
+  railFill.style.height = fillPx + 'px';
+  railMarker.style.top = (inset + fillPx) + 'px'; // marker's top IS measured from #chapter-rail's own edge, so it needs the full inset added back in
+
+  // Slide counter color: light text on dark slide types (cover/divider),
+  // dark text everywhere else. See #count.on-dark in the CSS.
+  const isDarkSlide = slide.classList.contains('cover') || slide.classList.contains('divider');
+  document.getElementById('count').classList.toggle('on-dark', isDarkSlide);
+}
+
+// ---- 5. NAVIGATION -----------------------------------------------------------
+function go(i, st){
+  cur = Math.max(0, Math.min(slides.length - 1, i));
+  step = st;
+  render();
+}
+
+// Jump to the FIRST slide of the next/previous chapter (used by ArrowUp/
+// ArrowDown — see keydown handler below). "Next chapter" = the first slide
+// index whose data-ch is strictly greater than the current slide's data-ch;
+// "previous chapter" = the first slide index whose data-ch equals the
+// PREVIOUS chapter number (so Up from the middle of a chapter goes to that
+// chapter's own divider, not skips two chapters back — pressing Up again
+// from there continues one more chapter back, same as most slide software).
+function goToNextChapter(){
+  const curCh = +slides[cur].dataset.ch;
+  const idx = slides.findIndex(s => +s.dataset.ch > curCh);
+  if (idx !== -1) go(idx, 0);
+}
+function goToPrevChapter(){
+  const curCh = +slides[cur].dataset.ch;
+  // Find where the CURRENT chapter starts.
+  const curChStart = slides.findIndex(s => +s.dataset.ch === curCh);
+  if (cur > curChStart) {
+    // We're mid-chapter: Up/PageUp-style jump goes to THIS chapter's start first.
+    go(curChStart, 0);
+    return;
+  }
+  // Already at this chapter's first slide: jump back to the previous
+  // chapter's first slide instead.
+  const prevCh = curCh - 1;
+  if (prevCh < 0) return;
+  const idx = slides.findIndex(s => +s.dataset.ch === prevCh);
+  if (idx !== -1) go(idx, 0);
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    if (step < maxStep(slides[cur]) - 1) { step++; render(); }
+    else if (cur < slides.length - 1) go(cur + 1, 0);
+  } else if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    if (step > 0) { step--; render(); }
+    else if (cur > 0) go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1));
+  } else if (e.key === 'ArrowDown') {
+    // Down = jump forward to the next CHAPTER (skips intervening content
+    // slides entirely, lands on that chapter's divider).
+    e.preventDefault();
+    goToNextChapter();
+  } else if (e.key === 'ArrowUp') {
+    // Up = jump back to the start of this chapter, or the previous
+    // chapter's start if already there.
+    e.preventDefault();
+    goToPrevChapter();
+  }
+});
+
+// Click the right/left thirds of the stage to advance/go back, same as a
+// clicker would in presenter mode. Clicking the rail label jumps nowhere
+// special yet (reserved for future "jump to chapter" if you want it).
+document.getElementById('stage').addEventListener('click', (e) => {
+  const rect = document.getElementById('stage').getBoundingClientRect();
+  const relX = (e.clientX - rect.left) / rect.width;
+  if (relX < 0.15) {
+    // left edge = back
+    if (step > 0) { step--; render(); }
+    else if (cur > 0) go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1));
+  } else if (relX > 0.85) {
+    // right edge = forward
+    if (step < maxStep(slides[cur]) - 1) { step++; render(); }
+    else if (cur < slides.length - 1) go(cur + 1, 0);
+  }
+});
+
+// ---- 6. FIXED-CANVAS SCALING --------------------------------------------------
+// Keeps the 1280x720 stage uniformly scaled to fit the viewport, same trick
+// as the reference site's fit().
+const stage = document.getElementById('stage');
+function fit(){
+  const s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+  stage.style.transform = `translate(-50%,-50%) scale(${s})`;
+}
+window.addEventListener('resize', fit);
+fit();
+render();
+</script>
+</body>
+</html>
