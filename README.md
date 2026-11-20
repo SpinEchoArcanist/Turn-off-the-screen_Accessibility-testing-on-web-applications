@@ -1,18 +1,19 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.9.3 (first full build, 44 slides; semantic review of the accessibility tree; position in the chapter menu; screen-reader navigation).
+Version 0.9.4 (45 slides: Conclusion opener added; slide list; progress bar per chapter; images embedded).
 
 ## How to open
 
-Open `index.html` in a current browser (Chrome, Edge, Firefox or Safari). No installation and no network access are needed: the deck is one HTML file plus the photos and logos in `images/`.
+Open `index.html` in a current browser (Chrome, Edge, Firefox or Safari). No installation and no network access are needed: the deck is one self-contained HTML file — photos and logos are embedded in it, so it also works when opened straight from the zip.
 
 ## Navigation with a screen reader
 
 Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys and single letters for reading in browse mode, so the presenter keys below do not reach the deck. Use instead:
 
 - the **Previous** and **Next** buttons at the bottom right of each slide (Enter or Space): one step at a time; focus stays on the button and the new slide or the revealed text is announced;
-- the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 44");
+- the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 45");
+- the **Slide list** button at the top of the chapter menu (chevron): lists every slide by chapter, the current one marked; Up/Down arrows move in the list, Enter opens a slide, Esc closes it;
 - **All slides on one page** (deck controls, first Tab stops): every slide and step on one scrollable page, one heading per slide — the most comfortable way to read the deck after the talk.
 
 ## Keyboard shortcuts (presenter)
@@ -24,7 +25,7 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 | Home / End | First / last slide |
 | N | Show or hide the speaker notes |
 | Esc | Close the speaker notes and the chapter tooltips |
-| Tab | First stops: deck controls (Speaker notes, Reading view, All slides on one page, N shortcut on/off), then the seven chapters of the left rail, then the links of the current slide, then the Previous and Next buttons |
+| Tab | First stops: deck controls (Speaker notes, Reading view, All slides on one page, N shortcut on/off), then the Slide list button and the seven chapters of the left rail, then the links of the current slide, then the Previous and Next buttons |
 | Enter or Space on a chapter | Go to the first slide of that chapter |
 
 Mouse: click the left or right edge of the slide for the previous or next step; click a chapter icon in the left rail.
@@ -43,7 +44,7 @@ For projection, the 1280 × 720 slide is scaled to fit the window. When the wind
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.9.3, 19 November 2026):
+How it was tested (v0.9.4, 20 November 2026):
 
 - axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in slide view and in reading view: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
@@ -61,7 +62,7 @@ Feedback: please open an issue in this repository.
 
 ## Credits and licences
 
-- Photos and logos: itecor.
+- Photos and logos: itecor (embedded in `index.html`, photos resized to at most 1920 px wide).
 - Icons of the chapter rail: [Lucide](https://lucide.dev) v1.76.0 (monitor-off, accessibility, scale, pencil-ruler, search-check, flag, book-open), under the ISC License:
 
 ```
