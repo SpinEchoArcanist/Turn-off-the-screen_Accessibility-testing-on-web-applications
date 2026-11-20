@@ -3,972 +3,556 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Never Losing My Notes — Obsidian Brown Bag</title>
-
+<title>Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile — slides</title>
 <!--
-  ============================================================================
-  HOW THIS FILE IS ORGANISED (read this first)
-  ============================================================================
-  1. <style> block        — all CSS. Organised in the same order as the
-                             Obsidian/reveal.js version: tokens, stage/engine,
-                             then one block per slide "type" (chevlist, callout
-                             box, divider, demo split-panel, chapter rail, etc).
-  2. <body>
-       - background layers (purely decorative, fixed, behind everything)
-       - #stage            — the fixed 1280x720 canvas every slide lives in.
-                             This mirrors the Obsidian deck's "pin everything
-                             to a fixed frame" approach, but instead of
-                             reveal.js scaling the frame for us, a tiny JS
-                             function (fit()) does it by hand — see the
-                             <script> block, function fit().
-       - #chapter-rail      — the JS-built vertical progress rail (left edge),
-                             equivalent to the hand-coded .chapter-rail markup
-                             that was repeated on every slide in the .md file.
-                             Built ONCE from the CHAPTERS array in <script>.
-       - #count             — "N / TOTAL" slide counter, top-right.
-       - one <section class="slide"> per slide, in deck order. Each section
-         carries data-ch="<chapter index>" so the rail/engine know which
-         chapter it belongs to. This is the direct equivalent of one slide
-         between "---" separators in the .md file.
-  3. <script> block        — the paging engine: shows/hides slides, walks
-                             "reveal steps" within a slide (data-s attribues,
-                             equivalent to reveal.js .fragment), and rebuilds
-                             the chapter rail's active/traveled state.
-
-  ============================================================================
-  HOW TO EDIT SLIDE TEXT / CONTENT
-  ============================================================================
-  - Every slide is a self-contained section.slide block, in the same order
-    as the original deck, each preceded by a comment banner such as
-    "SLIDE 6 - Foundation / What is Obsidian?". Find the banner, edit the
-    text inside. You do not need to touch the style or script blocks for
-    ordinary text edits.
-  - Chapter dividers, the cover, and demo slides are visually distinct slide
-    "types" (see the CSS section headers below) — copy an existing slide of
-    the same type as your starting point if you add a new one.
-  - If you ADD or REMOVE a slide, update the CHAPTERS array's slide ranges
-    are NOT needed (unlike the old --i/--n system!) — the rail now walks the
-    live DOM (document.querySelectorAll('.slide')) every time it renders, so
-    counts and positions are always automatically correct. This is one of
-    the main advantages of this standalone rebuild over the old hand-numbered
-    --i/--n CSS system.
-  - Images: reference them as "images/filename.png" (a flat folder called
-    images/ that must sit next to this HTML file). Drop your exported
-    Itecor/Obsidian assets in there with the same filenames used below and
-    they will resolve automatically. If an image is still missing, the
-    layout will just show a broken-image icon in that slot — nothing else
-    on the slide breaks.
-  ============================================================================
+  Turn Off the Screen — HTML deck v0.9 (D2-2 Build, 2026-11-19)
+  Itecor engine, minimal Itecor theme (P23), thin icon rail (P24).
+  Keys: Right / Space / PageDown = next step · Left / PageUp = previous step ·
+        Home / End = first / last slide · N = speaker notes · Esc = close notes and tooltips.
+  Zoom (SC 1.4.4): the fixed 1280 × 720 stage is scaled to the window for projection; below 1000 CSS px
+  of width (e.g. 200 % zoom on a 1920 px screen), when the zoom level rises after loading, or on request
+  ("Reading view"), the deck switches to a scrollable reflow layout in CSS pixels that browser zoom enlarges.
 -->
-
 <style>
-/* ==========================================================================
-   1. COLOR + LAYOUT TOKENS
-   Same palette as the Obsidian deck (Itecor brand). --ac is the ONE color
-   that changes per-chapter (set by JS on <html> at render time) and drives
-   the rail dot, the kicker dot, and any "accent" highlight on the slide.
-   ========================================================================== */
 :root{
-  --accent1:#FE5000;   /* Itecor orange — primary accent, chevrons, titles */
-  --accent3:#00C19F;   /* teal — callout box background */
-  --dark2:#333F48;     /* navy — body text, dark panels */
-  --lt2:#E7E6E6;       /* light grey — code background */
-  --paper:#FFFFFF;     /* card / slide background on light slides */
-  --muted:#6b7280;     /* muted grey footnote text */
-
-  --ac:#FE5000;        /* CURRENT chapter accent — overwritten by JS per-slide.
-                           Defaults to orange (Intro chapter). */
-
-  --stage-w:1280px;
-  --stage-h:720px;
+  --accent1:#FE5000;   /* Itecor orange: lines, rules, large text only (3.3:1 on white) */
+  --label:#C44100;     /* orange for small capitals labels on white (5.12:1) */
+  --label-dark:#FF9A66;/* orange for labels on navy (5.17:1) */
+  --kicker-dark:#FFB38A;/* kicker on dark slides */
+  --dark2:#333F48;     /* navy: titles, headings, body (10.8:1 on white) */
+  --body2:#525C66;     /* secondary text (6.81:1 on white) */
+  --hair:#D9DCDF;      /* hairlines (decorative) */
+  --paper:#FFFFFF;
+  --muted:#6b7280;     /* 4.83:1 on white */
+  --stage-w:1280px; --stage-h:720px;
+  --notes-h:0px;
 }
-
 *{ margin:0; padding:0; box-sizing:border-box; }
 html,body{ height:100%; background:#0c0c0c; overflow:hidden; }
 body{ font-family:Arial, Helvetica, sans-serif; color:var(--dark2); }
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 
-/* ==========================================================================
-   2. STAGE / SCALING ENGINE
-   A fixed 1280x720 canvas, centered in the viewport and uniformly scaled to
-   fit (see fit() in <script>). Every slide is absolutely positioned INSIDE
-   this canvas, so pixel values behave identically to the old reveal.js deck
-   regardless of the visitor's actual window size.
-   ========================================================================== */
-#stage{
-  position:fixed;
-  left:50%; top:50%;
-  width:var(--stage-w); height:var(--stage-h);
-  transform:translate(-50%,-50%) scale(1); /* scale is rewritten by fit() */
-  background:var(--paper);
-  box-shadow:0 40px 120px rgba(0,0,0,0.5);
-  overflow:hidden;
-}
+/* ---------- Deck controls: visible only when focused (first Tab stop) ---------- */
+#controls{ position:fixed; left:8px; top:8px; z-index:100; display:flex; gap:8px; padding:8px; background:var(--dark2);
+  transform:translateY(-200%); }
+#controls:focus-within{ transform:none; }
+#controls button{ font:700 14px Arial, sans-serif; color:var(--dark2); background:#fff; border:2px solid #fff; padding:6px 12px; cursor:pointer; }
+#controls .ctl-hint{ align-self:center; max-width:420px; font-size:13px; line-height:1.35; color:#fff; padding:0 6px; }
+#controls button[aria-pressed="true"]{ background:#FFB38A; border-color:#FFB38A; }
+#controls button:focus-visible{ outline:3px solid #fff; outline-offset:2px; box-shadow:0 0 0 5px var(--dark2); }
 
-/* ==========================================================================
-   3. SLIDE BASE — every <section class="slide"> stacks in the same spot;
-   only the "on" one is visible. This replaces reveal.js's slide-changing
-   entirely: nothing physically moves, we just swap opacity/visibility,
-   exactly like the reference site's .sl / .sl.on pattern.
-   ========================================================================== */
-.slide{
-  position:absolute; inset:0;
-  width:100%; height:100%;
-  padding:0 2.2em 2.2em 2.2em;
-  opacity:0; visibility:hidden;
-  transition:opacity .45s ease;
-  background:var(--paper);
-}
-.slide.on{ opacity:1; visibility:visible; }
+/* ---------- Stage (template engine) ---------- */
+#stage{ position:fixed; left:50%; top:calc((100% - var(--notes-h)) / 2); width:var(--stage-w); height:var(--stage-h);
+  transform:translate(-50%,-50%) scale(1); background:var(--paper);
+  box-shadow:0 40px 120px rgba(0,0,0,.5); overflow:hidden; }
+.slide{ position:absolute; top:0; right:0; bottom:0; left:0; opacity:0; visibility:hidden;
+  transition:opacity .45s ease, visibility 0s linear .45s; background:var(--paper);
+  display:flex; flex-direction:column; padding:38px 60px 60px 100px; }
+.slide.on{ opacity:1; visibility:visible; transition:opacity .45s ease; }
 
-/* Slides that reserve left space for the chapter rail (i.e. everything
-   except cover / dividers / demo panels) get extra left padding so body
-   copy never sits under the rail. Applied per-slide via .with-rail.
-   Widened (5.4em -> 13.4em) to clear the new, wider full-chapter-list
-   rail (11em wide, starting 1.6em from the stage edge). */
-.slide.with-rail{ padding-left:13.4em; }
+/* ---------- Slide header: kicker + title + short rule ---------- */
+.slide-head{ position:relative; z-index:5; flex:0 0 auto; }
+.kicker{ font-size:15px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label); }
+.slide-title{ margin-top:8px; font-size:40px; font-weight:700; line-height:1.15; color:var(--dark2); }
+.slide-head::after{ content:""; display:block; width:64px; height:4px; background:var(--accent1); margin-top:16px; }
 
-/* ==========================================================================
-   4. PINNED SLIDE TITLE ("content-title") — same visual role as in the
-   Obsidian deck: an orange, underlined h3 pinned near the top-left of every
-   regular content slide so titles line up slide-to-slide.
-   SIZE/POSITION: enlarged again per feedback (was 2.1em, now 2.8em) — still
-   top-left anchored (not centered), just bigger so it reads as a real
-   headline rather than a small label.
-   ========================================================================== */
-.content-title{
-  position:absolute;
-  top:0.8em; left:13.4em;
-  max-width:85%;
-  color:var(--accent1);
-  font-weight:700;
-  font-size:2.8em;
-  line-height:1.15;
-  padding-bottom:0.2em;
-  border-bottom:4px solid var(--accent1);
-  z-index:5;
-}
+.slide-body{ flex:1 1 auto; margin-top:40px; min-height:0;
+  display:flex; flex-direction:column; justify-content:center; align-items:stretch; gap:26px; }
+.slide-body.top{ justify-content:flex-start; margin-top:44px; }
 
-/* Body content wrapper: sits below the pinned title and spans the full
-   remaining slide height/width — vertically CENTERED by default so short
-   content (a couple of lines, a 3-4 item list) uses the whole slide
-   instead of collapsing to the top with empty space below.
-   NOTE: earlier versions applied a ".top-align" modifier to most slides
-   (originally meant only for slides where a growing reveal-list might
-   visually "jump" if centered) — that modifier ended up on nearly every
-   slide and is what caused the "hugs the top, empty at the bottom" bug.
-   It has been removed from the markup below; .top-align still exists as
-   an escape hatch for a future slide that specifically needs it, but is
-   no longer used by default. */
-.slide-body{
-  position:absolute;
-  top:6.4em; left:13.4em; right:3.2em; bottom:2.6em;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  text-align:center;
-  gap:1.1em;
-}
-/* Escape hatch (opt-in only, not applied anywhere by default any more):
-   pins body content to the top of its box instead of centering it. */
-.slide-body.top-align{ justify-content:flex-start; padding-top:0.4em; }
+/* Reveal steps: hidden from screen readers until shown */
+[data-s]{ opacity:0; visibility:hidden; transform:translateY(8px);
+  transition:opacity .4s ease, transform .4s ease, visibility 0s linear .4s; }
+[data-s].on{ opacity:1; visibility:visible; transform:none; transition:opacity .4s ease, transform .4s ease; }
 
-/* Chevron lists read better left-aligned even when the surrounding body
-   box is centering things (a centered bullet list looks odd — bullets
-   should line up vertically). This class is added alongside .chevlist in
-   the markup below to opt back into left alignment for just that list,
-   while still being horizontally CENTERED as a block within the slide
-   (auto margins) rather than pinned to the left edge. */
-.slide-body ul.chevlist{ text-align:left; margin:0 auto; }
+/* Chevron list (template) */
+ul.chevlist{ list-style:none; }
+ul.chevlist > li{ position:relative; padding-left:1.3em; margin-bottom:.55em; font-size:30px; line-height:1.3; }
+ul.chevlist > li:last-child{ margin-bottom:0; }
+ul.chevlist > li::before{ content:"›"; content:"›" / ""; color:var(--accent1); font-weight:700; position:absolute; left:0; }
+ul.chevlist.m > li{ font-size:26px; }
+ul.chevlist.s > li{ font-size:23px; margin-bottom:.5em; }
+ul.chevlist.l > li{ font-size:34px; }
+ul.chevlist.two{ display:grid; grid-template-columns:1fr 1fr; column-gap:48px; }
+ul.chevlist.two > li{ margin-bottom:.5em; }
+ul.chevlist b, .lead b{ font-weight:700; }
+.lead{ font-size:24px; line-height:1.35; color:var(--dark2); }
+.lead.big{ font-size:32px; font-weight:700; }
+code{ font-family:Consolas, "Courier New", monospace; font-size:.92em; }
+.note-line{ font-size:18px; line-height:1.4; color:var(--body2); }
+.note-line .lbl{ font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label); font-size:13px; margin-right:12px; }
 
-/* Text and lists inside the body: font sizes increased again (now the
-   biggest pass yet — 1.6em -> 2.1em) and max-width widened, now that the
-   container both centers AND fills the full vertical height, so slides
-   read as confident full-bleed statements rather than a cramped corner
-   of text. */
-.slide p{ font-size:2.1em; line-height:1.5; color:var(--dark2); max-width:1050px; }
-.slide b{ color:var(--dark2); }
-.subtitle2{ color:var(--muted); font-size:0.6em; font-weight:400; }
-code{ background:var(--lt2); color:var(--dark2); padding:0.15em 0.45em; border-radius:4px; font-size:0.75em; font-family:'Geist Mono', 'Courier New', monospace; }
-
-/* ==========================================================================
-   5. CHEVRON BULLET LIST — same look as .chevlist in the original deck.
-   Font size increased again (1.7em -> 2.1em) and vertical gap between
-   items opened up (0.75em -> 1em) so a short list (e.g. 3-5 items) reads
-   as a set of real statements spread through the slide, not a compressed
-   block sitting in a corner.
-   ========================================================================== */
-ul.chevlist{ list-style:none; padding-left:0; max-width:1050px; }
-ul.chevlist > li{
-  position:relative; padding-left:1.7em; margin-bottom:1em;
-  font-size:2.1em; color:var(--dark2);
-  opacity:0; transform:translateY(8px);
-  transition:opacity .4s ease, transform .4s ease;
-}
-ul.chevlist > li.on{ opacity:1; transform:translateY(0); }
-ul.chevlist > li::before{
-  content:"›"; color:var(--accent1); font-weight:700;
-  position:absolute; left:0;
-}
-
-/* ==========================================================================
-   6. CALLOUT BOX — teal box used for "payoff" lines. Font size increased
-   again to match the larger body text elsewhere on the slide.
-   ========================================================================== */
-.calloutbox{
-  border:2px solid var(--accent3);
-  background:var(--accent3);
-  border-radius:16px;
-  padding:1em 1.4em;
-  display:inline-block;
-  max-width:1050px;
-  color:#fff;
-  opacity:0; transform:translateY(8px);
-  transition:opacity .4s ease, transform .4s ease;
-}
-.calloutbox.on{ opacity:1; transform:translateY(0); }
-.calloutbox p{ color:#fff; margin:0; font-weight:700; font-size:1em; max-width:none; }
-
-/* Generic step-reveal utility for any element that isn't a chevlist item or
-   callout box (paragraphs, images, etc.) — same "data-s" step mechanism. */
-.reveal-step{
-  opacity:0; transform:translateY(8px);
-  transition:opacity .4s ease, transform .4s ease;
-}
-.reveal-step.on{ opacity:1; transform:translateY(0); }
-
-/* Muted footnote / orange payoff line reused from the original deck. */
-.note-gray{ font-size:0.85em; color:var(--muted); }
-.note-accent{ font-size:1em; font-weight:500; color:var(--accent1); }
-
-/* ==========================================================================
-   7. FOOTER BAR + LOGO + SLIDE NUMBER
-   Present on every regular content slide (not on cover/divider/demo, which
-   have their own light-on-dark footer treatment).
-   ========================================================================== */
-.footerbar{
-  position:absolute; left:50%; bottom:0.7em;
-  transform:translateX(-50%);
-  font-size:0.75em; font-weight:700; color:var(--dark2);
-  white-space:nowrap; z-index:2;
-}
-.footerbar .chev{ color:var(--accent1); margin:0 0.3em; }
-
-.footer-logo{
-  position:absolute; left:1.2em; bottom:0.6em;
-  height:1.3em; z-index:2;
-}
-
-.corner-triangle{
-  position:absolute; right:0; bottom:0.5em;
-  width:0; height:0;
-  border-style:solid;
-  border-width:15px 22px 15px 0;
-  border-color:transparent var(--accent1) transparent transparent;
-  z-index:2;
-}
-
-/* ==========================================================================
-   8. CHAPTER RAIL (left-edge progress rail) — REDESIGNED.
-   Built once by JS from the CHAPTERS array (see <script>). Previous version
-   showed only the CURRENT chapter's label, floating at a position computed
-   from overall slide progress. New version shows the full chapter list at
-   all times (grey by default), bolds/darkens whichever chapter is active,
-   and still slides a small chevron marker down the connecting line to
-   show fine-grained progress through the whole deck. Each chapter label is
-   a clickable <button> that jumps straight to that chapter's first slide.
-   ========================================================================== */
-#chapter-rail{
-  position:fixed;
-  left:calc(50% - (var(--stage-w) / 2) + 1.6em);
-  top:calc(50% - (var(--stage-h) * 0.36));
-  height:calc(var(--stage-h) * 0.72);
-  width:11em;
-  z-index:40;
-  /* Soft plate behind the whole rail so labels stay legible even when the
-     current slide is a full-bleed photo (cover/divider) sitting right
-     behind it. */
-  background:rgba(255,255,255,0.82);
-  border-radius:12px;
-  backdrop-filter:blur(2px);
-}
-/* ALIGNMENT STRATEGY (deliberately simple, to avoid the padding/margin
-   fudge-factor alignment bugs the old --i/--n rail in the Obsidian deck
-   kept running into): every element that needs to sit ON the line — the
-   line itself, the fill, the traveling marker, AND every chapter dot — is
-   absolutely positioned with the exact SAME "left" value (LINE_X, defined
-   once below as a value, repeated on each rule). None of them depend on
-   flexbox centering, margins, or nested padding to line up; they simply
-   all read the same number. If you ever need to move the line
-   horizontally, change LINE_X in these four places (search "LINE_X").
-   ========================================================================== */
-#chapter-rail::before{
-  /* LINE_X = 1.7em */
-  content:"";
-  position:absolute; left:1.7em; top:0.9em; bottom:0.9em; width:2px;
-  background:#dcdcdc;
-}
-#chapter-rail .rail-fill{
-  /* LINE_X = 1.7em */
-  position:absolute; left:1.7em; top:0.9em; width:2px;
-  background:var(--accent1);
-  transition:height .35s ease;
-}
-/* Small chevron marker that travels continuously along the line based on
-   exact slide progress (not snapped to a chapter dot) — this is what
-   preserves the original "descending progress" feel while the labels
-   below give the full map. */
-#chapter-rail .rail-marker{
-  /* LINE_X = 1.7em */
-  position:absolute; left:1.7em; width:0.8em; height:0.8em;
-  transform:translate(-50%,-50%);
-  transition:top .35s ease;
-  color:var(--accent1);
-  z-index:2;
-}
-#chapter-rail .rail-marker svg{ width:100%; height:100%; }
-
-/* Chapter list: one row per chapter, stacked top to bottom. Each row is
-   positioned by the flexbox below (for even vertical spacing only) but
-   its DOT is pulled out via position:absolute and pinned to the exact
-   same LINE_X used above, so horizontal alignment can never drift no
-   matter how the row's own padding/gap changes. */
-#chapter-rail .rail-chapters{
-  position:relative;
-  height:100%;
-  padding:0.9em 0.8em 0.9em 0;
-  box-sizing:border-box;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-between;
-}
-#chapter-rail .rail-chapter{
-  position:relative;
-  display:block;
-  background:none; border:none; cursor:pointer;
-  padding:0.3em 0 0.3em 2.5em; /* left padding reserves room for the absolutely-positioned dot */
-  text-align:left;
-  font-family:inherit;
-  width:100%;
-}
-/* The dot marking this chapter's position on the line — absolutely
-   positioned so its center sits exactly at LINE_X (1.7em), matching the
-   line/fill/marker above with no dependence on this button's own padding
-   or the flex layout around it. */
-#chapter-rail .rail-chapter .dot{
-  position:absolute;
-  left:1.7em; top:50%;
-  transform:translate(-50%,-50%);
-  width:0.62em; height:0.62em;
-  border-radius:50%;
-  background:#fff;
-  border:2px solid #c9c9c9;
-  transition:background .3s ease, border-color .3s ease;
-}
-#chapter-rail .rail-chapter .lbl{
-  font-size:0.78em; font-weight:600; letter-spacing:0.02em;
-  color:#9aa0a6; /* grey = not the current chapter */
-  transition:color .3s ease, font-weight .3s ease;
-  white-space:nowrap;
-}
-/* Past chapters (already visited): dot filled solid, label a bit darker
-   than the default grey but still clearly secondary to the active one. */
-#chapter-rail .rail-chapter.past .dot{ background:var(--accent1); border-color:var(--accent1); }
-#chapter-rail .rail-chapter.past .lbl{ color:#6b7280; }
-/* The CURRENT chapter: dot glows, label goes dark/bold — this is the
-   "only the current chapter in dark black" behavior requested. */
-#chapter-rail .rail-chapter.now .dot{
-  background:var(--accent1); border-color:var(--accent1);
-  box-shadow:0 0 0 4px rgba(254,80,0,0.18);
-}
-#chapter-rail .rail-chapter.now .lbl{ color:var(--dark2); font-weight:800; }
-#chapter-rail .rail-chapter:hover .lbl{ color:var(--dark2); }
-
-/* ==========================================================================
-   9. SLIDE COUNTER — bottom-right, next to the corner triangle (moved here
-   per feedback; originally top-right, but the Obsidian deck always kept
-   its slide number at the bottom, matching the footer row).
-   ========================================================================== */
-#count{
-  position:absolute; right:2.6em; bottom:0.75em;
-  font-size:0.85em; font-weight:600; letter-spacing:0.05em;
-  color:var(--muted); z-index:40;
-}
+/* Footer (template) */
+.footerbar{ position:absolute; left:50%; bottom:.7em; transform:translateX(-50%); font-size:12px;
+  font-weight:700; color:var(--dark2); white-space:nowrap; z-index:2; }
+.footerbar .chev{ color:var(--accent1); margin:0 .3em; }
+.footer-logo{ position:absolute; left:19px; bottom:10px; height:21px; z-index:2; }
+.corner-triangle{ position:absolute; right:0; bottom:8px; width:0; height:0; border-style:solid;
+  border-width:15px 22px 15px 0; border-color:transparent var(--accent1) transparent transparent; z-index:2; }
+#count{ position:absolute; right:42px; bottom:12px; font-size:13.6px; font-weight:600; color:var(--muted); z-index:40; }
 #count b{ color:var(--dark2); }
-/* On dark slide types (cover/divider) the counter needs to switch to a
-   light color to stay readable. #count is a SIBLING of .slide (both live
-   directly in #stage), not a descendant, so plain CSS can't target it
-   based on "which slide is currently .on" — the JS render() function
-   toggles this class instead. See <script> block. */
-#count.on-dark{ color:rgba(255,255,255,0.75); }
-#count.on-dark b{ color:#fff; }
+#count.on-dark, #count.on-dark b{ color:#fff; }
+#deck{ position:absolute; top:0; right:0; bottom:0; left:0; }
+/* Previous / Next buttons (work in screen reader browse mode, with voice control and the mouse) */
+.stepnav{ position:absolute; right:96px; bottom:5px; display:flex; gap:4px; z-index:41; }
+.stepnav button{ width:30px; height:30px; display:flex; align-items:center; justify-content:center; background:none; border:none;
+  color:var(--dark2); cursor:pointer; padding:0; }
+.stepnav button svg{ width:15px; height:15px; }
+.stepnav #btn-prev svg{ transform:scaleX(-1); }
+.stepnav button[aria-disabled="true"]{ opacity:.4; cursor:default; }
+#stage.dark .stepnav button{ color:#fff; }
+#stage.dark .stepnav button:focus-visible{ outline-color:#fff; box-shadow:0 0 0 5px var(--dark2); }
+#stage.dark .footerbar{ color:#fff; }
+#stage.dark .footerbar .chev{ color:var(--label-dark); }
+#stage.dark .footer-logo{ height:25px; }
+#stage.dark .corner-triangle{ display:none; }
 
-/* ==========================================================================
-   10. COVER SLIDE
-   FIX: the full-bleed background photo (image4.jpeg in the original deck)
-   was never actually wired up here before — only the dark scrim gradient
-   was present, with var(--dark2) as a flat-color fallback behind it. Now
-   the real photo is layered underneath the same scrim via the background
-   shorthand's multiple-layer syntax (gradient on top, image below it).
-   If images/image4.jpeg is missing this still degrades gracefully to the
-   flat navy color.
-   ========================================================================== */
-.slide.cover{
-  background:
-    linear-gradient(rgba(10,10,15,0.5), rgba(10,10,15,0.5)),
-    url("images/image4.jpeg") center / cover no-repeat,
-    var(--dark2);
-  color:#fff; padding:0;
-}
-.slide.cover .cover-logo{
-  position:absolute; bottom:38%; left:8%; max-width:26%;
-}
-.slide.cover .cover-text{
-  position:absolute; bottom:1.6em; left:1em; max-width:75%;
-}
-.cover-title{
-  font-weight:700; font-size:4.4em; color:var(--accent1);
-  text-align:left; margin-bottom:0.15em; line-height:1.05;
-}
-.cover-subtitle{
-  color:#f0f0f0; text-align:left; font-size:1.15em; font-weight:400;
-}
-.title-meta{
-  position:absolute; right:1.2em; bottom:1.2em;
-  font-size:1em; color:#fff; text-align:right; line-height:1.4;
-}
+/* Chapter rail — thin version: one line icon per chapter, full name on hover / focus (P2, P24) */
+#chapter-rail{ position:absolute; left:18px; top:110px; height:500px; width:44px; z-index:40; }
+#chapter-rail::before{ content:""; position:absolute; left:21px; top:12px; bottom:12px; width:2px; background:#9aa0a6; }
+#chapter-rail .rail-fill{ position:absolute; left:21px; top:12px; width:2px; background:var(--accent1); transition:height .35s ease; }
+#chapter-rail .rail-chapters{ list-style:none; position:relative; height:100%; display:flex; flex-direction:column; justify-content:space-between; align-items:center; }
+#chapter-rail .rail-chapters li{ display:flex; }
+#chapter-rail .rail-chapter{ position:relative; width:44px; height:36px; display:flex; align-items:center; justify-content:center;
+  background:none; border:none; cursor:pointer; font-family:inherit; padding:0; }
+#chapter-rail .node{ display:flex; align-items:center; justify-content:center; width:30px; height:30px; border-radius:50%;
+  background:#fff; border:2px solid #6b7280; color:var(--body2); }
+#chapter-rail .node svg{ width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+#chapter-rail .rail-chapter.past .node{ border-color:var(--accent1); color:var(--dark2); }
+#chapter-rail .rail-chapter.now .node{ width:36px; height:36px; background:var(--accent1); border-color:var(--accent1); color:#fff;
+  box-shadow:0 0 0 5px rgba(254,80,0,.18), 0 0 14px 4px rgba(254,80,0,.35); }
+#chapter-rail .rail-chapter.now .node svg{ width:19px; height:19px; }
+#chapter-rail .tip{ position:absolute; left:40px; top:50%; transform:translateY(-50%); white-space:nowrap;
+  background:var(--dark2); color:#fff; font-size:13px; font-weight:700; padding:5px 10px; visibility:hidden; opacity:0; transition:opacity .15s ease; }
+#chapter-rail .rail-chapter:hover .tip, #chapter-rail .rail-chapter:focus-visible .tip{ visibility:visible; opacity:1; }
+#chapter-rail.tips-off .tip{ visibility:hidden !important; opacity:0 !important; }
+#chapter-rail.on-dark::before{ background:#D9DCDF; }
+#chapter-rail.on-dark .node{ background:var(--dark2); border-color:#D9DCDF; color:#D9DCDF; }
+#chapter-rail.on-dark .rail-chapter.past .node{ border-color:var(--accent1); color:#fff; }
+#chapter-rail.on-dark .rail-chapter.now .node{ background:var(--accent1); border-color:var(--accent1); color:#fff; box-shadow:0 0 0 5px rgba(254,80,0,.28), 0 0 16px 5px rgba(254,80,0,.45); }
+#chapter-rail.on-dark .tip{ background:#fff; color:var(--dark2); }
+#chapter-rail.on-dark button:focus-visible{ outline-color:#fff; box-shadow:0 0 0 5px var(--dark2); }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible{ outline:3px solid var(--dark2); outline-offset:2px; box-shadow:0 0 0 5px #fff; }
+.on-dark-slide a:focus-visible{ outline-color:#fff; box-shadow:0 0 0 5px var(--dark2); }
 
-/* ==========================================================================
-   11. DIVIDER (CHAPTER OPENER) SLIDE
-   Full-bleed color panel, big chapter number, no rail shown on these.
-   FIX: each chapter divider uses a DIFFERENT background photo in the
-   original deck (image16.jpg for Foundation, image11.jpeg for Structure,
-   etc.), so unlike the cover there's no single shared background-image
-   rule here — instead .slide.divider gets a flat navy FALLBACK color only,
-   and each individual divider <section> below sets its own
-   background-image inline via style="background-image:url(...)". The
-   .scrim div (dark semi-transparent overlay) keeps the white title text
-   readable over any photo.
-   ========================================================================== */
-.slide.divider{
-  background-color:var(--dark2);
-  background-size:cover; background-position:center; background-repeat:no-repeat;
-  color:#fff; padding:0;
-}
-.divider .scrim{ position:absolute; inset:0; background:rgba(10,10,15,0.35); }
-.divider-wrap{
-  position:absolute; inset:0; display:flex; align-items:center;
-  justify-content:space-between; padding:0 1.6em;
-}
-.divider-left{ max-width:56%; position:relative; z-index:1; }
-.sectiontitle{ font-size:3.2em; font-weight:700; margin:0 0 0.2em 0; color:var(--accent1); }
-.sectionsub{ font-size:1.2em; font-weight:400; color:#fff; opacity:0.92; }
-.sectionnum{
-  font-size:14em; font-weight:700; color:#fff; opacity:0.85;
-  line-height:1; flex-shrink:0; position:relative; z-index:1;
-  transform:translateY(-0.05em);
-}
-.divider .footer-logo, .divider .footerbar{ color:#fff; }
-.divider .chevron-badge{
-  position:absolute; bottom:0.9em; right:0.9em;
-  width:3.4em; height:3.4em; color:var(--accent1); z-index:1;
-}
-.divider .chevron-badge svg{ width:100%; height:100%; }
+/* ---------- Shared block: one thin orange line (vertical, or on top) ---------- */
+.ablock{ border-left:3px solid var(--accent1); padding:4px 0 6px 22px; }
+.ablock .lbl{ display:block; font-size:14px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label); }
+.ablock h3{ font-size:30px; font-weight:700; line-height:1.15; color:var(--dark2); margin:10px 0 10px; }
+.ablock p{ font-size:20px; line-height:1.45; color:var(--body2); }
+.ablock p + p{ margin-top:8px; }
+.ablock p + h3, .ablock p + h4{ margin-top:22px; }
+.ablock h3 .lbl{ margin-bottom:10px; }
+.ablock h3.lblh, .cols .ablock h3.lblh{ font-size:14px; letter-spacing:.18em; text-transform:uppercase; color:var(--label); margin:0 0 4px; line-height:1.3; }
+.ablock h4{ font-size:28px; font-weight:700; line-height:1.15; color:var(--dark2); margin:10px 0; }
+dl.kv dt{ font-size:28px; font-weight:700; line-height:1.15; color:var(--dark2); margin-top:16px; }
+dl.kv dt:first-child{ margin-top:10px; }
+dl.kv dd{ font-size:20px; line-height:1.45; color:var(--body2); margin-top:6px; }
+ul.cards.stats li{ display:flex; flex-direction:column; }
+ul.cards.stats .stat{ order:-1; }
+ul.cards.stats h3{ margin-top:8px; }
+.ablock.top{ border-left:none; border-top:3px solid var(--accent1); padding:18px 0 0 0; }
 
-/* ==========================================================================
-   12. DEMO SLIDE — split panel (dark left / white right), same as original.
-   Text sizes increased (demo-label 2.6em -> 4em, demo-list 1.2em -> 2em)
-   to match the larger-text pass applied to regular content slides —
-   previously this slide type was overlooked and stayed at the old small
-   sizes.
-   ========================================================================== */
-.slide.demo{ padding:0; }
-.demo-left{
-  position:absolute; top:0; bottom:0; left:0; width:50%;
-  background:var(--dark2); color:#fff;
-  display:flex; align-items:center; padding-left:1.6em;
-}
-.demo-right{
-  position:absolute; top:0; bottom:0; right:0; width:50%;
-  background:#fff;
-  display:flex; align-items:center; padding-left:3.2em;
-}
-.demo-label{ font-size:4em; font-weight:800; letter-spacing:0.02em; color:var(--accent1); }
-.demo-list{ list-style:none; text-align:left; font-size:2em; color:var(--dark2); }
-.demo-list li{ margin-bottom:0.6em; }
-.demo-list li::before{ content:"›"; color:var(--accent1); font-weight:700; margin-right:0.5em; }
-.demo-chevron-big{
-  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  width:4.5em; height:4.5em; color:var(--accent1); z-index:2;
-}
-.demo-chevron-big svg{ width:100%; height:100%; }
-.demo .footer-logo{ z-index:3; }
+/* ---------- Question panel (Q1–Q4) and emphasis panel: flat navy, square ---------- */
+.qpanel, .npanel{ align-self:flex-start; background:var(--dark2); padding:20px 30px 22px; max-width:1120px; }
+.qpanel .qlbl, .npanel .qlbl{ display:block; font-size:14px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label-dark); }
+.qpanel .qtext{ display:block; margin-top:8px; font-size:28px; font-weight:700; line-height:1.3; color:#fff; }
+.npanel{ font-size:26px; font-weight:700; line-height:1.3; color:#fff; padding:16px 28px 18px; }
+.npanel.s{ font-size:22px; }
+.npanel .qlbl{ margin-bottom:6px; }
+.npanel code{ color:#FFD9C4; }
 
-/* ==========================================================================
-   13. BACKGROUND / DECORATIVE IMAGES ON CONTENT SLIDES
-   FIX: these were far too small (8em/10em wide, ~130-160px) to read as
-   background art — enlarged substantially (now 22em/26em, roughly
-   350-420px) so they act as a real decorative presence on the right side
-   of the slide, similar in scale to the original deck's hex-bg treatment.
-   Kept low-opacity and z-index:0 (behind all text) so they never fight
-   with body copy for attention or legibility.
-   ========================================================================== */
-.img-bg{
-  position:absolute; right:-1.5em; top:50%; transform:translateY(-50%);
-  width:22em; opacity:0.18; z-index:0; pointer-events:none;
-}
-.img2-bg{
-  position:absolute; right:-1.5em; top:50%; transform:translateY(-45%);
-  width:26em; opacity:0.5; z-index:0; pointer-events:none;
-}
+/* ---------- Flow: numbered blocks, chevron between (line on top) ---------- */
+ol.flow{ --n:3; list-style:none; display:flex; align-items:stretch; }
+ol.flow > li{ flex:1; display:flex; align-items:stretch; }
+ol.flow > li:first-child{ flex:0 0 calc((100% - (var(--n) - 1) * 48px) / var(--n)); }
+ol.flow .ablock{ flex:1; }
+ol.flow .arrow{ flex:0 0 48px; display:flex; justify-content:center; align-items:center; color:var(--accent1); }
+ol.flow .arrow svg{ width:22px; height:22px; }
+ol.flow.c h3{ font-size:25px; }
+ol.flow.c p{ font-size:18px; }
+/* Flow on two rows (S23): three per row, numbers carry the order */
+ol.flow.rows{ flex-wrap:wrap; row-gap:26px; }
+ol.flow.rows > li, ol.flow.rows > li:first-child{ flex:0 0 calc((100% - 96px) / 3); }
+ol.flow.rows > li.ar{ flex:0 0 calc((100% - 96px) / 3 + 48px); }
+ol.flow.rows > li.row2{ margin-left:0; }
+ol.flow.rows h3{ font-size:22px; margin:8px 0 6px; }
+ol.flow.rows p{ font-size:17px; line-height:1.4; }
+ol.flow.rows .ablock.top{ padding-top:12px; }
+.ref-line{ font-size:16px; color:var(--muted); display:flex; flex-wrap:wrap; align-items:baseline; row-gap:6px; }
+.ref-line a, dl.reflist a, table.dtable a{ overflow-wrap:anywhere; }
+.ref-line .lbl{ font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label); font-size:13px; margin-right:12px; }
+.ref-line a{ color:var(--dark2); font-weight:700; text-decoration:underline; text-underline-offset:3px; margin-right:18px; }
 
-/* ==========================================================================
-   RESPONSIVE NOTE: the #stage element is scaled as a whole unit by fit(),
-   so nothing in this file needs a media query — a phone and a projector
-   both just get a smaller/larger version of the same fixed 1280x720 canvas.
-   ========================================================================== */
+/* ---------- Card grid ---------- */
+ul.cards{ --n:4; list-style:none; display:grid; grid-template-columns:repeat(var(--n),1fr); gap:30px; }
+ul.cards .letter{ display:block; font-size:44px; font-weight:800; line-height:1; color:var(--accent1); }
+ul.cards h3{ font-size:24px; margin:10px 0 8px; }
+ul.cards .lbl + h3{ margin-top:8px; }
+ul.cards.lg h3{ font-size:30px; }
+ul.cards.lg p{ font-size:22px; line-height:1.4; }
+ul.cards .big{ display:block; font-size:44px; font-weight:800; line-height:1; color:var(--accent1); margin-top:10px; }
+
+/* ---------- Two columns ---------- */
+.cols{ display:grid; grid-template-columns:1fr 1fr; gap:56px; }
+.cols .ablock h3{ font-size:28px; }
+
+/* ---------- Table: no box; labelled header, hairline rows ---------- */
+table.dtable{ width:100%; border-collapse:collapse; font-size:19px; line-height:1.4; }
+table.dtable thead th{ text-align:left; font-size:13px; font-weight:700; letter-spacing:.18em; text-transform:uppercase;
+  color:var(--label); padding:0 16px 10px 0; border-bottom:2px solid var(--accent1); }
+table.dtable tbody th, table.dtable tbody td{ text-align:left; vertical-align:top; padding:10px 16px 10px 0; border-bottom:1px solid var(--hair); }
+table.dtable tbody th{ width:20%; font-weight:700; color:var(--dark2); }
+table.dtable tbody td{ color:var(--dark2); }
+table.dtable tbody tr[data-s]{ transform:none; }
+table.dtable a, .reflist a{ color:var(--dark2); text-decoration:underline; text-underline-offset:3px; }
+
+/* ---------- Reference lists (S43, S44) ---------- */
+dl.reflist{ display:grid; grid-template-columns:200px 1fr; column-gap:28px; font-size:18px; line-height:1.45; }
+dl.reflist dt{ font-size:13px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label);
+  padding:9px 0; border-top:1px solid var(--hair); }
+dl.reflist dd{ padding:7px 0; border-top:1px solid var(--hair); color:var(--dark2); }
+dl.reflist dt:first-of-type, dl.reflist dd:first-of-type{ border-top:2px solid var(--accent1); }
+dl.reflist .sep{ color:var(--label); margin:0 .45em; }
+
+/* ---------- Chapter map (S03) ---------- */
+ol.chmap{ list-style:none; display:grid; grid-template-columns:1fr 1fr; column-gap:64px; }
+ol.chmap li{ display:flex; align-items:center; gap:22px; padding:16px 0; border-top:1px solid var(--hair); }
+ol.chmap li:nth-child(-n+2){ border-top:2px solid var(--accent1); }
+ol.chmap .ico{ flex:0 0 46px; height:46px; border-radius:50%; border:2px solid var(--accent1); color:var(--dark2);
+  display:flex; align-items:center; justify-content:center; }
+ol.chmap .ico svg{ width:22px; height:22px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+ol.chmap .num{ display:block; font-size:13px; font-weight:700; letter-spacing:.18em; text-transform:uppercase; color:var(--label); }
+ol.chmap .name{ display:block; font-size:28px; font-weight:700; color:var(--dark2); line-height:1.2; margin-top:2px; }
+
+/* ---------- Photo slides: cover, chapter openers, closing (P7) ----------
+   Scrim = navy rgba(51,63,72,a): 0.94 at the left edge, 0.92 at 55 %, 0.75 at the right edge.
+   Worst case = a white photo pixel; ratios in the test report. */
+.slide.photo{ color:#fff; background-color:var(--dark2); background-size:cover; background-position:center; background-repeat:no-repeat; }
+.slide.photo .kicker{ color:var(--kicker-dark); }
+.photo-body{ position:absolute; top:0; bottom:0; left:100px; right:60px; display:flex; flex-direction:column; justify-content:center; }
+.cover .photo-body{ right:380px; }
+.cover .logo-top{ position:absolute; left:100px; top:56px; height:40px; }
+.cover-title{ margin-top:14px; font-size:76px; font-weight:700; line-height:1.05; color:#fff; }
+.cover-sub{ margin-top:18px; font-size:30px; line-height:1.3; color:#fff; font-weight:400; }
+.cover-rule, .open-rule{ display:block; width:64px; height:4px; background:var(--accent1); margin-top:26px; }
+.cover-by{ margin-top:22px; font-size:22px; font-weight:700; color:#fff; }
+.cover-by span{ color:var(--label-dark); margin:0 .35em; }
+.opener .photo-body{ right:420px; }
+.open-title{ margin-top:14px; font-size:64px; font-weight:700; line-height:1.08; color:#fff; }
+.open-num{ position:absolute; right:110px; top:50%; transform:translateY(-52%); font-size:280px; font-weight:700; line-height:1; color:#fff; }
+
+/* ---------- Closing ---------- */
+.closing .photo-body{ right:60px; }
+.statement{ margin-top:22px; border-left:3px solid var(--accent1); padding:6px 0 8px 28px; }
+.statement span{ display:block; font-size:50px; font-weight:700; line-height:1.2; color:#fff; }
+.statement span.last{ color:var(--label-dark); }
+.test-line{ margin-top:36px; font-size:18px; line-height:1.45; color:#D9DCDF; max-width:1000px; }
+
+/* ---------- Speaker notes panel (P5): hidden by default, toggled with N ---------- */
+#notes{ position:fixed; left:0; right:0; bottom:0; height:var(--notes-h); background:#1d2328; color:#E8EAED;
+  border-top:3px solid var(--accent1); z-index:90; display:flex; flex-direction:column; font-size:15px; line-height:1.45; }
+#notes[hidden]{ display:none; }
+#notes .nhead{ display:flex; gap:18px; align-items:baseline; padding:8px 20px 6px; border-bottom:1px solid #3a434b; }
+#notes .nhead h2{ font-size:14px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#FFB38A; }
+#notes .nhead .meta{ color:#E8EAED; font-weight:700; }
+#notes .nhead .hint{ margin-left:auto; color:#B8BEC4; font-size:13px; }
+#notes .nbody{ flex:1; overflow:auto; padding:10px 20px 14px; display:grid; grid-template-columns:3fr 2fr; gap:28px; }
+#notes .nbody:focus-visible{ outline:3px solid #FFB38A; outline-offset:-3px; box-shadow:none; }
+#notes h3{ font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:#FFB38A; margin:6px 0 3px; }
+#notes h3:first-child{ margin-top:0; }
+#notes ul{ padding-left:18px; }
+#notes li{ margin-bottom:2px; }
+#notes .next{ color:#B8BEC4; margin-top:8px; }
+.slide .notes{ display:none; }
+
+/* ---------- Reading view (reflow): browser zoom enlarges the content (SC 1.4.4) ---------- */
+body.reflow, html.reflow{ overflow:auto; background:#fff; height:auto; }
+body.reflow #stage{ position:static; transform:none !important; width:auto; height:auto; box-shadow:none; overflow:visible; padding-left:64px; }
+body.reflow .slide{ display:none; position:relative; top:auto; right:auto; bottom:auto; left:auto; opacity:1; transition:none; }
+body.reflow #deck{ position:static; }
+body.reflow .slide.on{ display:flex; min-height:calc(100vh - 90px); padding:24px 20px 24px 20px; }
+body.reflow #deck-foot{ position:relative; display:block; height:90px; }
+body.reflow .slide-body{ margin-top:28px; justify-content:flex-start; gap:22px; }
+body.reflow .slide-title{ font-size:32px; }
+body.reflow ul.chevlist > li, body.reflow ul.chevlist.l > li, body.reflow ul.chevlist.m > li{ font-size:22px; }
+body.reflow ul.chevlist.s > li{ font-size:20px; }
+body.reflow ul.chevlist.two, body.reflow .cols, body.reflow ol.chmap{ display:block; }
+body.reflow .cols > * + *{ margin-top:22px; }
+body.reflow ol.flow{ display:block; }
+body.reflow ol.flow > li{ display:block; margin-top:14px; }
+body.reflow ol.flow .arrow{ display:none; }
+body.reflow ul.cards{ grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:20px; }
+body.reflow dl.reflist{ display:block; }
+body.reflow dl.reflist dt{ border-top:2px solid var(--accent1); }
+body.reflow dl.reflist dd{ border-top:none; }
+body.reflow .qpanel, body.reflow .npanel{ max-width:none; }
+body.reflow .photo-body{ position:static; padding:40px 0 0; }
+body.reflow .open-num{ position:static; transform:none; font-size:96px; margin-top:20px; }
+body.reflow .cover .logo-top{ position:static; display:block; margin-bottom:24px; }
+body.reflow .cover-title{ font-size:44px; }
+body.reflow .open-title{ font-size:40px; }
+body.reflow .statement span{ font-size:32px; }
+body.reflow .footerbar{ white-space:normal; text-align:center; bottom:44px; width:90%; }
+body.reflow #chapter-rail{ position:fixed; left:10px; top:20px; height:min(500px, calc(100vh - 40px)); }
+body.reflow #count{ position:fixed; top:8px; right:12px; bottom:auto; }
+body.reflow #notes{ position:static; height:auto; }
+body.reflow #notes .nbody{ display:block; overflow:visible; }
+body.reflow table.dtable tbody th{ width:auto; }
+body.reflow .stepnav{ right:20px; bottom:8px; }
+/* All slides on one page: every slide and every step shown, native scrolling */
+body.all .slide{ display:flex !important; opacity:1; visibility:visible; transition:none; min-height:auto; padding:40px 20px 48px 20px; border-bottom:2px solid var(--hair); }
+body.all .slide.photo{ min-height:60vh; }
+body.all [data-s]{ opacity:1; visibility:visible; transform:none; transition:none; }
+body.all .stepnav, body.all #count{ display:none; }
+body.all .slide h2:focus{ outline:3px solid var(--accent1); outline-offset:4px; }
+
+@media (prefers-reduced-motion: reduce){
+  .slide, .slide.on, [data-s], [data-s].on, #chapter-rail .rail-fill, #chapter-rail .tip{ transition:none !important; }
+  [data-s]{ transform:none !important; }
+}
 </style>
 </head>
 <body>
+<!-- Icons: Lucide v1.76.0 (lucide.dev), ISC License, Copyright (c) 2026 Lucide Icons and Contributors.
+     Permission to use, copy, modify, and/or distribute this software for any purpose with or without fee is hereby granted,
+     provided that the above copyright notice and this permission notice appear in all copies. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <symbol id="i-intro" viewBox="0 0 24 24"><path d="M12 17v4"/> <path d="M17 17H4a2 2 0 0 1-2-2V5a2 2 0 0 1 1.184-1.826"/> <path d="m2 2 20 20"/> <path d="M8 21h8"/> <path d="M8.656 3H20a2 2 0 0 1 2 2v10a2 2 0 0 1-.293 1.042"/></symbol>
+  <symbol id="i-ch1" viewBox="0 0 24 24"><circle cx="16" cy="4" r="1"/> <path d="m18 19 1-7-6 1"/> <path d="m5 8 3-3 5.5 3-2.36 3.5"/> <path d="M4.24 14.5a5 5 0 0 0 6.88 6"/> <path d="M13.76 17.5a5 5 0 0 0-6.88-6"/></symbol>
+  <symbol id="i-ch2" viewBox="0 0 24 24"><path d="M12 3v18"/> <path d="m19 8 3 8a5 5 0 0 1-6 0zV7"/> <path d="M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1"/> <path d="m5 8 3 8a5 5 0 0 1-6 0zV7"/> <path d="M7 21h10"/></symbol>
+  <symbol id="i-ch3" viewBox="0 0 24 24"><path d="M13 7 8.7 2.7a2.41 2.41 0 0 0-3.4 0L2.7 5.3a2.41 2.41 0 0 0 0 3.4L7 13"/> <path d="m8 6 2-2"/> <path d="m18 16 2-2"/> <path d="m17 11 4.3 4.3c.94.94.94 2.46 0 3.4l-2.6 2.6c-.94.94-2.46.94-3.4 0L11 17"/> <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/> <path d="m15 5 4 4"/></symbol>
+  <symbol id="i-ch4" viewBox="0 0 24 24"><path d="m8 11 2 2 4-4"/> <circle cx="11" cy="11" r="8"/> <path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-concl" viewBox="0 0 24 24"><path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/></symbol>
+  <symbol id="i-refs" viewBox="0 0 24 24"><path d="M12 5v16"/> <path d="M20.001 19A2 2 0 0022 17V5a2 2 0 00-1.999-2L16 3.002A5 5 0 0012 5a5 5 0 00-4-2H4a2 2 0 00-2 2v12a2 2 0 001.999 2H8a5 5 0 014 2 5 5 0 014-2z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 340.16 340.16"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor" stroke="none"/></symbol>
+</defs></svg>
 
-<!-- The fixed-size canvas. All slides live inside here. -->
+<section id="controls" aria-label="Deck controls">
+  <button type="button" id="btn-notes" aria-pressed="false">Speaker notes (N)</button>
+  <button type="button" id="btn-reflow" aria-pressed="false">Reading view</button>
+  <button type="button" id="btn-all" aria-pressed="false">All slides on one page</button>
+  <button type="button" id="btn-nkey" aria-pressed="true">N shortcut on</button>
+  <p class="ctl-hint">With a screen reader: use the Previous and Next buttons at the bottom of the slide, or All slides on one page.</p>
+</section>
+
 <div id="stage">
+  <nav id="chapter-rail" aria-label="Chapters"></nav>
+  <main id="deck" aria-label="Slides">
+    <h1 class="sr-only">Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile — slides</h1>
+    <p id="keyhelp" class="sr-only">How to use this deck: the Previous and Next buttons at the bottom of each slide move one step at a time, and the chapter menu opens a chapter. To read every slide like a normal page, choose All slides on one page in the deck controls at the top. Presenter keys: arrows, Page Up and Page Down, Home, End, N for speaker notes, Escape to close them.</p>
+    <div id="announce" class="sr-only" aria-live="polite"></div>
+<section class="slide photo cover on-dark-slide" id="s01" data-ch="0" data-min="0.25" aria-labelledby="tS01" style="background-image:linear-gradient(90deg, rgba(51,63,72,.94) 0%, rgba(51,63,72,.92) 55%, rgba(51,63,72,.75) 100%), url('images/image4.jpeg')"><img src="images/image7.png" class="logo-top" alt="Itecor"><div class="photo-body"><p class="kicker">Intro</p><h2 class="cover-title" id="tS01">Turn Off the Screen</h2><p class="cover-sub">What I’ve Learned About Accessibility Testing on Web and Mobile</p><span class="cover-rule" aria-hidden="true"></span><p class="cover-by">Simone Coppo<span aria-hidden="true">·</span><span class="sr-only">, </span>27.11.2026</p></div><div class="notes"><div><h3>Goal</h3><p>Open the session.</p><h3>Say</h3><ul><li>Welcome.</li><li>Today: what I have learned about accessibility testing on web and mobile, from the official sources and from field testing.</li></ul></div><div><h3>Transition</h3><p>Let me start with a question about our own apps.</p></div></div></section>
+<section class="slide" id="s02" data-ch="0" data-min="1.5" aria-labelledby="tS02"><header class="slide-head"><p class="kicker">Intro</p><h2 class="slide-title" id="tS02">Turn off the screen</h2></header><div class="slide-body"><ul class="chevlist " role="list"><li data-s="0">Could you use our app without a mouse? With the screen off?</li><li data-s="1">Blind people use web apps too — if we build them right</li></ul><p class="qpanel" data-s="2"><span class="qlbl">Audience question<span aria-hidden="true"> · </span><span class="sr-only">, </span>Q1</span><span class="qtext">“Who has tested a feature without a mouse?”</span></p></div><div class="notes"><div><h3>Goal</h3><p>Make the room see that blind people do use web apps, and that making this possible is our job.</p><h3>Say</h3><ul><li>Many people skip accessibility because they think blind people cannot use web applications.</li><li>They can: with a screen reader and the keyboard, impaired users, even blind users, use apps every day, if the app is developed correctly.</li><li>So it is our job to make sure they can use it, to include them.</li><li>I test this on my projects; it is humbling.</li><li>I share what I learned from the official sources and from field testing.</li></ul></div><div><h3>Audience question</h3><p>Q1, show of hands: “Who has tested a feature without a mouse?”</p><h3>Transition</h3><p>Here is the route: basics first, then how I test.</p><h3>Backup (if asked)</h3><p>The lecture material holds the details and the sources; it is shared after the session.</p></div></div></section>
+<section class="slide" id="s03" data-ch="0" data-min="0.5" aria-labelledby="tS03"><header class="slide-head"><p class="kicker">Intro</p><h2 class="slide-title" id="tS03">Agenda</h2></header><div class="slide-body"><ol class="chmap" role="list"><li data-s="0"><span class="ico" aria-hidden="true"><svg><use href="#i-ch1"/></svg></span><span><span class="num">Chapter 1<span class="sr-only">: </span></span><span class="name">Why it matters</span></span></li><li data-s="1"><span class="ico" aria-hidden="true"><svg><use href="#i-ch2"/></svg></span><span><span class="num">Chapter 2<span class="sr-only">: </span></span><span class="name">Standards and laws</span></span></li><li data-s="2"><span class="ico" aria-hidden="true"><svg><use href="#i-ch3"/></svg></span><span><span class="num">Chapter 3<span class="sr-only">: </span></span><span class="name">How to build accessible apps</span></span></li><li data-s="3"><span class="ico" aria-hidden="true"><svg><use href="#i-ch4"/></svg></span><span><span class="num">Chapter 4<span class="sr-only">: </span></span><span class="name">How to test them</span></span></li><li data-s="4"><span class="ico" aria-hidden="true"><svg><use href="#i-concl"/></svg></span><span><span class="num" aria-hidden="true">&nbsp;</span><span class="name">Conclusion</span></span></li><li data-s="5"><span class="ico" aria-hidden="true"><svg><use href="#i-refs"/></svg></span><span><span class="num" aria-hidden="true">&nbsp;</span><span class="name">References</span></span></li></ol></div><div class="notes"><div><h3>Goal</h3><p>Show the route of the talk.</p><h3>Say</h3><ul><li>Basics first: why it matters, standards and laws, how to build accessible apps.</li><li>Then the heart of the talk: how I test (Chapter 4).</li><li>Conclusion, then the references to read later.</li></ul></div><div><h3>Transition</h3><p>Chapter 1: why it matters.</p></div></div></section>
+<section class="slide photo opener on-dark-slide" id="s04" data-ch="1" data-min="0.25" aria-labelledby="tS04" style="background-image:linear-gradient(90deg, rgba(51,63,72,.94) 0%, rgba(51,63,72,.92) 55%, rgba(51,63,72,.75) 100%), url('images/image16.jpg')"><div class="photo-body"><p class="kicker">Chapter 1</p><h2 class="open-title" id="tS04">Introduction to Accessibility</h2><span class="open-rule" aria-hidden="true"></span></div><p class="open-num" aria-hidden="true">1</p><div class="notes"><div><h3>Goal</h3><p>Open Chapter 1.</p><h3>Say</h3><ul><li>Chapter 1: why accessibility matters.</li></ul></div><div><h3>Transition</h3><p>First, how people with impairments actually use apps.</p></div></div></section>
+<section class="slide" id="s05" data-ch="1" data-min="1.5" aria-labelledby="tS05"><header class="slide-head"><p class="kicker">Introduction to accessibility</p><h2 class="slide-title" id="tS05">How they use the web</h2></header><div class="slide-body"><p class="lead">How people with impairments use apps:</p><ul class="chevlist m" role="list"><li data-s="0"><b>Screen reader</b>: reads the screen aloud and lets users jump between links, buttons, headings and page zones</li><li data-s="1">Keyboard only</li><li data-s="2">Zoom and magnifier</li><li data-s="3">Voice commands</li><li data-s="4">Captions</li></ul><p class="npanel " data-s="5">These are the tools we test with</p></div><div class="notes"><div><h3>Goal</h3><p>Show that assistive technologies are navigation tools, and that they only work if the app exposes the right information.</p><h3>Say</h3><ul><li>Assistive technologies turn the app into speech, keys, bigger text or voice commands.</li><li>A screen reader is more than a voice: it is a powerful navigation tool. Users list all the links, jump from heading to heading, move from button to button or from zone to zone (header, menu, main content) to find what they need fast.</li><li>Knowing how it works tells us how to build the app (real headings, named buttons, clear zones) and how to test it.</li><li>They only work if the app exposes the right information.</li><li>An unlabelled field: the screen reader cannot tell the user what the field is for, so a blind user cannot complete the form.</li><li>A mouse-only feature: keyboard and speech-input users are excluded.</li><li>Treat it like performance, reliability or security.</li></ul></div><div><h3>Transition</h3><p>Who are these users?</p><h3>Backup (if asked)</h3><p>Screen reader names and mobile figures come on S07. Zoom, magnifier and voice commands: lecture 1.3; captions: 1.2; keyboard and switch-device users: 3.4.</p></div></div></section>
+<section class="slide" id="s06" data-ch="1" data-min="0.5" aria-labelledby="tS06"><header class="slide-head"><p class="kicker">Introduction to accessibility</p><h2 class="slide-title" id="tS06">Who is impacted</h2></header><div class="slide-body"><ul class="chevlist l" role="list"><li data-s="0"><b>Visual<span aria-hidden="true"> · </span><span class="sr-only">, </span>hearing<span aria-hidden="true"> · </span><span class="sr-only">, </span>physical<span aria-hidden="true"> · </span><span class="sr-only">, </span>speech<span aria-hidden="true"> · </span><span class="sr-only">, </span>cognitive</b> impairments</li><li data-s="1">Plus temporary limits (a broken arm)</li><li data-s="2">And situational ones (bright sun, noise)</li></ul></div><div class="notes"><div><h3>Goal</h3><p>Widen the picture: impairments, temporary and situational limits concern everyone at some point.</p><h3>Say</h3><ul><li>Five types of impairment.</li><li>Deaf users need captions: prerecorded captions are Level A, live captions Level AA.</li><li>A broken arm, sunlight, noise, age: everyone at some point.</li></ul></div><div><h3>Transition</h3><p>And phones make all this more important.</p><h3>Backup (if asked)</h3><p>W3C: think in functional needs, not medical categories.</p></div></div></section>
+<section class="slide" id="s07" data-ch="1" data-min="0.75" aria-labelledby="tS07"><header class="slide-head"><p class="kicker">Introduction to accessibility</p><h2 class="slide-title" id="tS07">Smartphones amplify it</h2></header><div class="slide-body"><p class="lead big" data-s="0">On a phone, you only need the phone</p><ul class="chevlist m" role="list"><li data-s="1">VoiceOver (iPhone), TalkBack (Android): built in, nothing else to buy</li><li data-s="2">Desktop: a screen reader to install, sometimes extra hardware (braille display)</li></ul><p class="npanel " data-s="3">We all do more and more on our phones, and so do people with disabilities</p></div><div class="notes"><div><h3>Goal</h3><p>Show that mobile makes assistive technology more accessible, so mobile testing is no longer optional.</p><h3>Say</h3><ul><li>On a computer, a screen reader can need extra tooling: a separate install, sometimes a braille display or keyboard.</li><li>On a phone you just need the phone: the screen reader is built in, so the technology is more accessible.</li><li>We all do more and more on our phones, and so do people who are blind: more than half use mobile at least as much as desktop (49.0% about the same, 8.3% mostly mobile).</li><li>Mobile testing is no longer optional.</li></ul></div><div><h3>Transition</h3><p>The good news: we can test all this.</p><h3>Backup (if asked)</h3><p>On desktop most screen reader users use JAWS or NVDA, installed separately.</p></div></div></section>
+<section class="slide" id="s08" data-ch="1" data-min="0.75" aria-labelledby="tS08"><header class="slide-head"><p class="kicker">Introduction to accessibility</p><h2 class="slide-title" id="tS08">Good news: we can test it</h2></header><div class="slide-body"><ul class="chevlist l" role="list"><li data-s="0">Accessibility can be tested</li><li data-s="1">So let’s test it, and test it right</li></ul><p class="npanel " data-s="2">Standards tell us how</p></div><div class="notes"><div><h3>Goal</h3><p>Turn accessibility into a testable quality attribute, which needs shared rules.</p><h3>Say</h3><ul><li>Good news: accessibility is not a vague feeling; we can check it with a clear yes or no, like any other quality attribute.</li><li>Examples: “Can every function be reached by keyboard?”, “Does every field expose its label to the screen reader?”, “Are headings and lists real markup, not just visual styling?”</li><li>So let’s do it, and let’s do it right.</li><li>To do it right we need shared, objective rules: that is what standards and legislation give us.</li></ul></div><div><h3>Transition</h3><p>Next section: standards and legislation.</p><h3>Backup (if asked)</h3><p>W3C: combine automated testing and human evaluation. Accessible design helps all users and is most efficient when built in from the start (lecture 1.4).</p></div></div></section>
+<section class="slide photo opener on-dark-slide" id="s09" data-ch="2" data-min="0.25" aria-labelledby="tS09" style="background-image:linear-gradient(90deg, rgba(51,63,72,.94) 0%, rgba(51,63,72,.92) 55%, rgba(51,63,72,.75) 100%), url('images/image11.jpeg')"><div class="photo-body"><p class="kicker">Chapter 2</p><h2 class="open-title" id="tS09">Principles and Legislation</h2><span class="open-rule" aria-hidden="true"></span></div><p class="open-num" aria-hidden="true">2</p><div class="notes"><div><h3>Goal</h3><p>Open Chapter 2.</p><h3>Say</h3><ul><li>Chapter 2: the principles and the legislation, the shared rules we test against.</li></ul></div><div><h3>Transition</h3><p>Two layers: standards first, then laws.</p></div></div></section>
+<section class="slide" id="s10" data-ch="2" data-min="1" aria-labelledby="tS10"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS10">First standards, then laws</h2></header><div class="slide-body"><ol class="flow " role="list" style="--n:2"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 2: </span>Standard</h3><p><i>What</i> an accessible app must do</p></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 2: </span>Law or contract</h3><p>Points to a standard and sets which version and level are mandatory</p></div></li></ol></div><div class="notes"><div><h3>Goal</h3><p>Separate the two layers: the standard defines the rules, the law or contract sets the target.</p><h3>Say</h3><ul><li>Two layers.</li><li>First, standards exist: technical rules written by experts that say what an accessible app must do.</li><li>Then, laws are based on these standards: they do not rewrite the rules, they point to a standard and say which version and level is mandatory. A contract can do the same.</li><li>For us testers: each test case traces to a rule of the standard; the target to reach comes from the law or contract.</li></ul></div><div><h3>Transition</h3><p>Who writes that standard? W3C, WAI, WCAG.</p></div></div></section>
+<section class="slide" id="s11" data-ch="2" data-min="1.5" aria-labelledby="tS11"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS11">W3C<span aria-hidden="true"> → </span><span class="sr-only">, then </span>WAI<span aria-hidden="true"> → </span><span class="sr-only">, then </span>WCAG</h2></header><div class="slide-body"><ol class="flow " role="list" style="--n:3"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 3: </span>W3C</h3><p>Makes open web standards</p></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 3: </span>WAI</h3><p>Web Accessibility Initiative: its accessibility initiative</p></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 3: </span>WCAG</h3><p>Web Content Accessibility Guidelines, created by WAI: the shared international accessibility standard</p></div></li></ol><p class="ref-line"><span class="lbl">References</span><a href="https://www.w3.org/WAI/">w3.org/WAI</a><a href="https://www.w3.org/TR/WCAG22/">w3.org/TR/WCAG22</a><a href="https://accessibilite.numerique.gouv.fr/">accessibilite.numerique.gouv.fr</a></p></div><div class="notes"><div><h3>Goal</h3><p>Name the chain W3C → WAI → WCAG and the version we use.</p><h3>Say</h3><ul><li>Three names, one chain.</li><li>W3C (World Wide Web Consortium) is the body that makes the open standards the web runs on.</li><li>Inside W3C, WAI (Web Accessibility Initiative) is the group dedicated to accessibility.</li><li>WAI created WCAG: one set of guidelines, shared internationally, that says what accessible web content must do.</li><li>It is also published as an ISO standard (ISO/IEC 40500:2025), and the laws we will see next refer to it.</li><li>The version I use is WCAG 2.2: Recommendation 5 Oct 2023, updated Dec 2024.</li><li>It applies to web content on mobile too, and can also be applied to native apps.</li><li>The three sites at the bottom are the ones to bookmark; they come back on the reference slides.</li></ul></div><div><h3>Transition</h3><p>WCAG rests on four principles.</p><h3>Backup (if asked)</h3><p>Earlier versions: WCAG 2.0 (2008), 2.1 (2018).</p></div></div></section>
+<section class="slide" id="s12" data-ch="2" data-min="1.5" aria-labelledby="tS12"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS12">POUR</h2></header><div class="slide-body"><p class="lead">WCAG is based on 4 principles; content must be:</p><ul class="cards " role="list" style="--n:4"><li class="ablock top" data-s="0"><span class="letter" aria-hidden="true">P</span><h3>Perceivable</h3><p>Users can see or hear it</p></li><li class="ablock top" data-s="1"><span class="letter" aria-hidden="true">O</span><h3>Operable</h3><p>Usable, e.g. by keyboard</p></li><li class="ablock top" data-s="2"><span class="letter" aria-hidden="true">U</span><h3>Understandable</h3><p>Clear text and behaviour</p></li><li class="ablock top" data-s="3"><span class="letter" aria-hidden="true">R</span><h3>Robust</h3><p>Works with assistive tools</p></li></ul><p class="qpanel" data-s="4"><span class="qlbl">Audience question<span aria-hidden="true"> · </span><span class="sr-only">, </span>Q2</span><span class="qtext">“A feature needs a mouse: which principle?”</span></p></div><div class="notes"><div><h3>Goal</h3><p>Give the four principles, with one example each.</p><h3>Say</h3><ul><li>One example each: Perceivable = alt text and contrast · Operable = keyboard · Understandable = labels · Robust = name, role, value.</li><li>If one of them is not true, users with disabilities cannot use the web.</li></ul></div><div><h3>Audience question</h3><p>Q2, one-word answer: “A feature needs a mouse: which principle?” Answer: Operable.</p><h3>Transition</h3><p>How do we get from a principle to a test?</p></div></div></section>
+<section class="slide" id="s13" data-ch="2" data-min="1.5" aria-labelledby="tS13"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS13">From principle to test</h2></header><div class="slide-body"><p class="lead">How WCAG is organised:</p><ol class="flow c" role="list" style="--n:4"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 4: </span>4 principles</h3></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 4: </span>13 guidelines</h3><p>Goals</p></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 4: </span>Success criteria</h3><p>Testable rules, level A<span aria-hidden="true"> · </span><span class="sr-only">, </span>AA<span aria-hidden="true"> · </span><span class="sr-only">, </span>AAA</p></div></li><li data-s="3"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">04</span><h3><span class="sr-only">Step 4 of 4: </span>Techniques</h3><p>How to meet them</p></div></li></ol><p class="note-line" data-s="4"><span class="lbl">My summary</span>Appendix A</p></div><div class="notes"><div><h3>Goal</h3><p>Show that success criteria are what we test and report against; only WCAG itself is normative.</p><h3>Say</h3><ul><li>Read it top-down.</li><li>4 principles: the big ideas (POUR, previous slide).</li><li>13 guidelines: the goals under each principle, e.g. “keyboard accessible”; useful to organise, but too general to test.</li><li>Success criteria: the concrete rules under each guideline; each is true or false, so each one becomes a test condition for us, and each has a level (A, AA or AAA).</li><li>Techniques: ways to meet a criterion; failures: common ways to break it.</li><li>Techniques and failures are informative: helpful examples, not mandatory.</li><li>Only WCAG itself (principles, guidelines, success criteria) is normative: that is what we test and report against.</li><li>My summary of WCAG: Appendix A.</li></ul></div><div><h3>Transition</h3><p>Each criterion has a level: A, AA, AAA.</p><h3>Backup (if asked)</h3><p>Sufficient versus advisory techniques (lecture 2.2).</p></div></div></section>
+<section class="slide" id="s14" data-ch="2" data-min="1" aria-labelledby="tS14"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS14">Conformance levels</h2></header><div class="slide-body"><p class="lead">3 levels, each includes the previous:</p><ol class="flow " role="list" style="--n:3"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 3: </span>A</h3><p>Minimum</p></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 3: </span>AA</h3><p>Includes A</p></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 3: </span>AAA</h3><p>Includes A and AA</p></div></li></ol><p class="npanel " data-s="3">AA = the level laws require</p></div><div class="notes"><div><h3>Goal</h3><p>Fix AA as the reference level.</p><h3>Say</h3><ul><li>AA = all A criteria + all AA criteria.</li><li>A is the minimum.</li><li>AAA is not recommended as a general policy.</li><li>A level is not a severity.</li></ul></div><div><h3>Transition</h3><p>Which laws point to WCAG near us? France and Switzerland.</p><h3>Backup (if asked)</h3><p>How criteria were assigned to levels: lecture 2.3.</p></div></div></section>
+<section class="slide" id="s15" data-ch="2" data-min="1" aria-labelledby="tS15"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS15">France and Switzerland</h2></header><div class="slide-body"><div class="cols"><div class="ablock" data-s="0"><h3 class="lblh">France</h3><h4>RGAA 4.1.2</h4><p lang="fr"><i>Référentiel général d’amélioration de l’accessibilité</i></p><p>A test method based on WCAG</p></div><div class="ablock" data-s="1"><h3 class="lblh">Switzerland</h3><h4>LHand</h4><p>Disability equality law (SR 151.3)</p><h4>eCH-0059</h4><p>Federal standard: WCAG 2.1 AA</p></div></div><p class="ref-line" data-s="2"><span class="lbl">References</span><a href="https://accessibilite.numerique.gouv.fr/">RGAA</a><a href="https://www.fedlex.admin.ch/eli/cc/2003/667/fr">LHand (SR 151.3)</a><a href="https://www.ech.ch/fr/ech/ech-0059/3.0">eCH-0059</a></p></div><div class="notes"><div><h3>Goal</h3><p>Show the two frameworks closest to us, both built on WCAG.</p><h3>Say</h3><ul><li>RGAA: 106 criteria with tests on WCAG 2.1 A/AA; RGAA 5 is planned for the end of 2026; very useful for testers.</li><li>LHand (SR 151.3), in force since 2004.</li><li>eCH-0059 V3.0: WCAG 2.1 AA, binding for the federal administration.</li><li>The EU legislation (WAD, EAA, EN 301 549) is on the reference slide S43.</li></ul></div><div><h3>Transition</h3><p>What this means for a test team.</p><h3>Backup (if asked)</h3><p>BehiG is the German name of LHand; BFEH site (ebgb.admin.ch).</p></div></div></section>
+<section class="slide" id="s16" data-ch="2" data-min="0.75" aria-labelledby="tS16"><header class="slide-head"><p class="kicker">Principles and legislation</p><h2 class="slide-title" id="tS16">For a test team</h2></header><div class="slide-body"><ul class="chevlist l" role="list"><li data-s="0">Target level: <b>AA</b></li><li data-s="1">Test against <b>WCAG 2.2 AA</b> (it also covers 2.1)</li></ul></div><div class="notes"><div><h3>Goal</h3><p>Give the test team one target: WCAG 2.2 AA.</p><h3>Say</h3><ul><li>Check the framework, version and level first.</li><li>WCAG 2.2 AA covers 2.1 A/AA.</li><li>If the framework is on 2.1, report the 6 added criteria separately.</li></ul></div><div><h3>Transition</h3><p>The target is WCAG 2.2 AA. Now the rules that prevent the defects I keep finding.</p><h3>Backup (if asked)</h3><p>The 6 added A/AA criteria: 2.4.11, 2.5.7, 2.5.8, 3.2.6, 3.3.7, 3.3.8.</p></div></div></section>
+<section class="slide photo opener on-dark-slide" id="s17" data-ch="3" data-min="0.25" aria-labelledby="tS17" style="background-image:linear-gradient(90deg, rgba(51,63,72,.94) 0%, rgba(51,63,72,.92) 55%, rgba(51,63,72,.75) 100%), url('images/image10.jpeg')"><div class="photo-body"><p class="kicker">Chapter 3</p><h2 class="open-title" id="tS17">How to Build Accessible</h2><span class="open-rule" aria-hidden="true"></span></div><p class="open-num" aria-hidden="true">3</p><div class="notes"><div><h3>Goal</h3><p>Open Chapter 3.</p><h3>Say</h3><ul><li>The rules that prevent the defects I keep finding.</li></ul></div><div><h3>Transition</h3><p>Starting with ARIA.</p><h3>Backup (if asked)</h3><p>The lecture’s code examples carry an AI disclaimer.</p></div></div></section>
+<section class="slide" id="s18" data-ch="3" data-min="1.5" aria-labelledby="tS18"><header class="slide-head"><p class="kicker">How to build accessible</p><h2 class="slide-title" id="tS18">What is ARIA</h2></header><div class="slide-body"><p class="lead"><b>ARIA</b> (Accessible Rich Internet Applications) = extra HTML attributes that tell assistive technologies what an element is</p><ul class="chevlist s" role="list"><li data-s="0"><b>Roles</b>: what it is (button, dialog, tab)</li><li data-s="1"><b>States and properties</b>: its condition (expanded, checked, invalid) and its name or description</li><li data-s="2"><b>Live regions</b>: announce changes on the page</li></ul><p class="npanel s" data-s="3"><span class="qlbl">Example</span>Three “Download” buttons, one per document<span aria-hidden="true"> → </span><span class="sr-only">: </span><code>aria-label="Download annual report"</code> tells the screen reader user which file</p></div><div class="notes"><div><h3>Goal</h3><p>Explain what ARIA does: it sets name, role and state when HTML cannot.</p><h3>Say</h3><ul><li>HTML alone cannot describe every custom widget, so W3C created WAI-ARIA.</li><li>For each control the screen reader announces a name, a role and a state; ARIA lets us set them when HTML cannot.</li><li>Common attributes: role, aria-label, aria-labelledby, aria-describedby, aria-expanded, aria-checked, aria-invalid, aria-hidden, aria-live.</li><li>Classic example: a list of documents, each with a “Download” button. Sighted users know which file it is from its position next to the title, but the screen reader only hears “Download, Download, Download”.</li><li>aria-label="Download annual report" gives the context that the eyes get from the layout; the name still starts with the visible word “Download”.</li><li>ARIA changes only what is announced, not how the element behaves.</li></ul></div><div><h3>Transition</h3><p>Which brings us to the rule: native HTML first.</p><h3>Backup (if asked)</h3><p>Full list: WAI-ARIA specification and the ARIA Authoring Practices Guide (APG), links on S43.</p></div></div></section>
+<section class="slide" id="s19" data-ch="3" data-min="0.75" aria-labelledby="tS19"><header class="slide-head"><p class="kicker">How to build accessible</p><h2 class="slide-title" id="tS19">Native first</h2></header><div class="slide-body"><ol class="flow " role="list" style="--n:3"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 3: </span>Native HTML first</h3><p>Use native HTML elements first</p></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 3: </span>ARIA only if needed</h3><p>Add ARIA only if needed</p></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 3: </span>Verify</h3><p>With the keyboard and a screen reader</p></div></li></ol><p class="npanel " data-s="3">“A role is a promise”: call it a button, it must behave like one</p></div><div class="notes"><div><h3>Goal</h3><p>Native HTML first; ARIA describes but adds no behaviour.</p><h3>Say</h3><ul><li>Landmarks, real headings, &lt;button&gt; and &lt;a&gt; for anything clickable.</li><li>ARIA describes, it adds no behaviour.</li><li>No ARIA is better than bad ARIA.</li><li>The accessible name contains the visible label.</li></ul></div><div><h3>Transition</h3><p>Three rules I check on every screen: contrast, focus, images.</p><h3>Backup (if asked)</h3><p>The “Download” example is on S18.</p></div></div></section>
+<section class="slide" id="s20" data-ch="3" data-min="1" aria-labelledby="tS20"><header class="slide-head"><p class="kicker">How to build accessible</p><h2 class="slide-title" id="tS20">Contrast, focus, images</h2></header><div class="slide-body"><ul class="cards lg" role="list" style="--n:3"><li class="ablock top" data-s="0"><h3>Text contrast</h3><p>At least 4.5:1 (3:1 for large text and icons)</p></li><li class="ablock top" data-s="1"><h3>Keyboard focus</h3><p>Always visible</p></li><li class="ablock top" data-s="2"><h3>Image alt text</h3><p>= its purpose</p></li></ul></div><div class="notes"><div><h3>Goal</h3><p>Three rules that prevent frequent defects.</p><h3>Say</h3><ul><li>Ratios are never rounded: #767676 passes, #777 fails.</li><li>Never colour alone.</li><li>Never remove the focus outline; dialogs take focus and give it back; no keyboard trap.</li><li>Alt text = purpose in context; decorative images alt=""; an icon is named by its action.</li></ul></div><div><h3>Transition</h3><p>And forms need extra care.</p><h3>Backup (if asked)</h3><p>Mobile rules (lecture 3.7): 24 × 24 px targets, zoom, reflow, gestures.</p></div></div></section>
+<section class="slide" id="s21" data-ch="3" data-min="1.5" aria-labelledby="tS21"><header class="slide-head"><p class="kicker">How to build accessible</p><h2 class="slide-title" id="tS21">Forms need extra care</h2></header><div class="slide-body"><ul class="chevlist s" role="list"><li data-s="0">Every field has a visible label (a placeholder is not a label)</li><li data-s="1">Error messages are clear, linked to their field and reachable by keyboard</li><li data-s="2">The expected format is stated up front (date, phone number…)</li><li data-s="3">Autocomplete lists (e.g. an address that fills in as you type) are delicate: test them carefully</li></ul><p class="qpanel" data-s="4"><span class="qlbl">Audience question<span aria-hidden="true"> · </span><span class="sr-only">, </span>Q3</span><span class="qtext">“Which field in your forms worries you most?”</span></p></div><div class="notes"><div><h3>Goal</h3><p>Forms are where users get stuck most often: one blocked field blocks the whole process.</p><h3>Say</h3><ul><li>Forms are where users get stuck most often, and one blocked field blocks the whole process.</li><li>Label: visible and associated with the field, so the screen reader reads it; a placeholder is not a label.</li><li>Errors: in text (not only red), linked to the field and announced, so a keyboard or screen reader user can find and fix them.</li><li>Format: say it before the user types (e.g. how to write a date or a phone number), not only in the error.</li><li>Autocomplete and dynamic lists: the user must hear that suggestions appeared, move through them with the keyboard and pick one; test them with a screen reader every time.</li></ul></div><div><h3>Audience question</h3><p>Q3, two or three answers: “Which field in your forms worries you most?”</p><h3>Transition</h3><p>Rules prevent defects; testing finds the ones that slip through. Now: how I test.</p><h3>Backup (if asked)</h3><p>The wrong-practice form (lecture 3.5) stays in the lecture material.</p></div></div></section>
+<section class="slide photo opener on-dark-slide" id="s22" data-ch="4" data-min="0.25" aria-labelledby="tS22" style="background-image:linear-gradient(90deg, rgba(51,63,72,.94) 0%, rgba(51,63,72,.92) 55%, rgba(51,63,72,.75) 100%), url('images/image15.jpeg')"><div class="photo-body"><p class="kicker">Chapter 4</p><h2 class="open-title" id="tS22">How to Test Accessibility</h2><span class="open-rule" aria-hidden="true"></span></div><p class="open-num" aria-hidden="true">4</p><div class="notes"><div><h3>Goal</h3><p>Open Chapter 4, the heart of the talk.</p><h3>Say</h3><ul><li>Chapter 4: how I test accessibility.</li></ul></div><div><h3>Transition</h3><p>Testing starts long before the test phase.</p></div></div></section>
+<section class="slide" id="s23" data-ch="4" data-min="1.5" aria-labelledby="tS23"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS23">A dimension of every phase</h2></header><div class="slide-body"><p class="lead" data-s="0">Not only tested: accessibility is built in at every step</p><ol class="flow rows" role="list"><li data-s="1"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 6: </span>Requirements and documentation</h3><p>Written into specs, user stories and acceptance criteria</p></div></li><li class="ar" data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 6: </span>Design</h3><p>Contrast, focus, reading order and labels decided in the mock-ups</p></div></li><li class="ar" data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 6: </span>Development</h3><p>Native HTML, names and roles in the code</p></div></li><li data-s="2"><div class="ablock top"><span class="lbl" aria-hidden="true">04</span><h3><span class="sr-only">Step 4 of 6: </span>Test cases and Definition of Done</h3><p>Not done until it passes the accessibility checks</p></div></li><li class="ar" data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">05</span><h3><span class="sr-only">Step 5 of 6: </span>CI pipeline</h3><p>Automated checks on every build</p></div></li><li class="ar" data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">06</span><h3><span class="sr-only">Step 6 of 6: </span>Release</h3><p>Verified before going live</p></div></li></ol><p class="npanel s" data-s="3">Fixing at the end costs the most</p></div><div class="notes"><div><h3>Goal</h3><p>Accessibility is part of every step, like security or performance.</p><h3>Say</h3><ul><li>Testing at the end finds problems when they are most expensive to fix; accessibility must be part of every step, like security or performance.</li><li>W3C: evaluate throughout the project, inside the existing QA process.</li><li>Requirements and documentation: accessibility written into specs, user stories and acceptance criteria, so it is a requirement and not a surprise.</li><li>Design: contrast, focus, reading order and labels decided in the mock-ups.</li><li>Development: native HTML, names and roles in the code.</li><li>Test cases and Definition of Done: a story is not done until it passes the accessibility checks.</li><li>CI: automated checks on every build.</li><li>Each role owns part of WCAG. Tester: verify each part and make requirements visible early.</li><li>Functional testing (manual + automated) + usability with real users.</li></ul></div><div><h3>Transition</h3><p>Two things to check early: the information structure.</p><h3>Backup (if asked)</h3><p>Lifecycle table and ARRM: lecture 4.1.</p></div></div></section>
+<section class="slide" id="s24" data-ch="4" data-min="1.25" aria-labelledby="tS24"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS24">Information structure</h2></header><div class="slide-body"><div class="cols"><div class="ablock" data-s="0"><h3><span class="lbl" aria-hidden="true">1</span><span class="sr-only">1. </span>Reading order</h3><p>A screen reader reads one element at a time, in code order: the order is crucial to understand the page</p><p>It cannot be tested automatically: a person must test it</p><p>If it is wrong, the whole page may need restructuring, which is costly<span aria-hidden="true"> → </span><span class="sr-only">, so </span>check it early, in the mock-ups</p></div><div class="ablock" data-s="1"><h3><span class="lbl" aria-hidden="true">2</span><span class="sr-only">2. </span>Meaning given by layout</h3><p>A “Close” button placed next to what it closes</p><p>Also not testable automatically</p><p>Often a correct label fixes it (“Close filters”)</p></div></div></div><div class="notes"><div><h3>Goal</h3><p>Reading order and meaning given by layout: not automatable, tested late, expensive to fix, so check them early.</p><h3>Say</h3><ul><li>Reading order 1.3.2, focus order 2.4.3, structure 1.3.1.</li><li>Information given only by position or context is lost: “Close” next to a panel is clear to the eyes, but alone it does not say what it closes; a correct label (“Close filters”) often solves it without redesign.</li><li>Not automatable, tested late, expensive to fix.</li><li>Annotate reading order, headings and landmarks; read the wireframe top to bottom.</li></ul></div><div><h3>Transition</h3><p>So accessibility must be in the requirements, and a failure is critical.</p></div></div></section>
+<section class="slide" id="s25" data-ch="4" data-min="1.5" aria-labelledby="tS25"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS25">Accessibility in the requirements, and when a defect is critical</h2></header><div class="slide-body"><div class="cols"><div class="ablock" data-s="0"><h3><span class="lbl" aria-hidden="true">1</span><span class="sr-only">1. </span>In the requirements</h3><p>Each user story gets accessibility acceptance criteria, each linked to a WCAG success criterion</p><p>E.g. “the form can be completed with the keyboard only”, “the ‘Saved’ message is announced by the screen reader”</p></div><div class="ablock" data-s="1"><h3><span class="lbl" aria-hidden="true">2</span><span class="sr-only">2. </span>When a defect is critical</h3><p>When AA is required, any A or AA failure is a critical defect</p><p>One inaccessible step blocks the whole process</p></div></div></div><div class="notes"><div><h3>Goal</h3><p>Put accessibility into the acceptance criteria, and treat A/AA failures as critical when AA is required.</p><h3>Say</h3><ul><li>If accessibility is not in the requirements, nobody builds it and the tester has nothing to test against.</li><li>So we write it into the acceptance criteria of each story, each one linked to a WCAG success criterion so it is testable: e.g. keyboard 2.1.1/2.1.2 (everything reachable, no trap), status messages 4.1.3 (“Saved” announced).</li><li>Accessible names (button labels, alt text) are content: word them with the Business, like any other text.</li><li>Severity: when the law or contract requires AA, a failure is not cosmetic; for a blind or keyboard user one inaccessible step = the whole process is inaccessible, so it is critical.</li></ul></div><div><h3>Transition</h3><p>My checklist helps here: Appendix B.</p><h3>Backup (if asked)</h3><p>Full acceptance-criteria table, DoD list, third-party content: lecture 4.1.</p></div></div></section>
+<section class="slide" id="s26" data-ch="4" data-min="1.25" aria-labelledby="tS26"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS26">My guide: Appendix B</h2></header><div class="slide-body"><p class="lead">My checklist in two views</p><div class="cols"><div class="ablock" data-s="0"><h3><span class="lbl" aria-hidden="true">View 1</span><span class="sr-only">View 1: </span>By theme</h3><p>Forms, images, keyboard…</p><p>For developers and user story tests: check only what the story touches</p></div><div class="ablock" data-s="1"><h3><span class="lbl" aria-hidden="true">View 2</span><span class="sr-only">View 2: </span>By conformance level</h3><p>A, then AA</p><p>For end-to-end tests before a release: check the whole journey</p></div></div></div><div class="notes"><div><h3>Goal</h3><p>Show the two ways to use the same checklist, depending on the test level.</p><h3>Say</h3><ul><li>Two ways to use the same checklist, depending on the test level.</li><li>By theme: in refinement and development, pick the themes the story touches (a form → forms, errors, keyboard); developers self-check, testers use it for the user story tests; small and fast.</li><li>By conformance level: for end-to-end tests on complete journeys before a release, and for regression, go through all A criteria, then all AA, with Xray references.</li><li>It helps prepare an audit, but it is not an audit: an audit covers the whole product, done by experts (S38).</li></ul></div><div><h3>Transition</h3><p>Now the how: two navigation levels.</p><h3>Backup (if asked)</h3><p>WAI Easy Checks as a first look.</p></div></div></section>
+<section class="slide" id="s27" data-ch="4" data-min="1.25" aria-labelledby="tS27"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS27">Two navigation levels<span aria-hidden="true"> · </span><span class="sr-only">. </span>Level 1: keyboard</h2></header><div class="slide-body"><div class="cols"><div class="ablock" data-s="0"><h3 class="lblh">Two navigation levels</h3><dl class="kv"><dt>Keyboard</dt><dd>Reaches only interactive controls</dd><dt>Screen reader</dt><dd>Reaches everything (text, headings, images)</dd></dl></div><div class="ablock" data-s="1"><h3 class="lblh">Level 1, keyboard only</h3><dl class="kv"><dt>Tab / Shift+Tab</dt><dd>To move</dd><dt>Enter / Space</dt><dd>To activate</dd><dt>Esc</dt><dd>To close</dd></dl></div></div></div><div class="notes"><div><h3>Goal</h3><p>Introduce the two navigation levels and run the keyboard level.</p><h3>Say</h3><ul><li>Focus order versus reading order.</li><li>The keyboard level usually passes; the screen reader finds the major defects.</li><li>Keyboard check: everything reachable, focus visible and not hidden, logical order.</li><li>Dialogs and menus: never stuck.</li><li>Focus alone changes nothing.</li><li>The keyboard is quick to explain; the screen reader needs more time.</li></ul></div><div><h3>Transition</h3><p>Level 2: the screen reader.</p><h3>Backup (if asked)</h3><p>Typical defects per level; common keyboard failures F54, F78, F44 (lecture 4.2).</p></div></div></section>
+<section class="slide" id="s28" data-ch="4" data-min="1.5" aria-labelledby="tS28"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS28">Level 2: screen reader</h2></header><div class="slide-body"><p class="lead">Check with a screen reader:</p><ul class="chevlist m two" role="list"><li data-s="0">Page title</li><li data-s="1">Headings</li><li data-s="2">Landmarks</li><li data-s="3">Read the whole page</li><li data-s="4">Each control</li><li data-s="5">The main task</li></ul><p class="npanel " data-s="6">What is heard is what the user gets</p></div><div class="notes"><div><h3>Goal</h3><p>The screen reader pass: what is heard is what the user gets.</p><h3>Say</h3><ul><li>67.8% of screen reader users navigate by headings first.</li><li>Each control: name, role, state.</li><li>Errors, states and status messages announced.</li><li>The name contains the visible label and makes sense alone (“Download, Download, Download”).</li></ul></div><div><h3>Transition</h3><p>Which screen reader? My path.</p><h3>Backup (if asked)</h3><p>Not every problem heard is a code defect; record the versions.</p></div></div></section>
+<section class="slide" id="s29" data-ch="4" data-min="1" aria-labelledby="tS29"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS29">Screen reader simulators and testing</h2></header><div class="slide-body"><p class="lead">My path:</p><ol class="flow " role="list" style="--n:3"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 3: </span>Silktide simulator</h3><p>For a quick pass</p></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 3: </span>Narrator</h3><p>Built into Windows, for the real check</p></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 3: </span>VoiceOver</h3><p>For the mobile check</p></div></li></ol><p class="note-line" data-s="3"><span class="lbl">Good practice</span>NVDA <span class="lbl" style="margin-left:28px">My guide</span>Appendix C</p></div><div class="notes"><div><h3>Goal</h3><p>Share my path from simulator to real screen readers.</p><h3>Say</h3><ul><li>My path: simulator for a quick pass, Narrator for the real check, VoiceOver for the mobile check.</li><li>Good practice is NVDA; I use Narrator because a blind user audits with JAWS.</li><li>My Narrator guide: Appendix C.</li></ul></div><div><h3>Transition</h3><p>The tools I use.</p><h3>Backup (if asked)</h3><p>JAWS 40-minute mode; VoiceOver on Mac.</p></div></div></section>
+<section class="slide" id="s30" data-ch="4" data-min="1" aria-labelledby="tS30"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS30">My toolkit</h2></header><div class="slide-body"><ul class="cards " role="list" style="--n:5"><li class="ablock top" data-s="0"><h3>Browser DevTools</h3></li><li class="ablock top" data-s="1"><h3>ARIA DevTools</h3></li><li class="ablock top" data-s="2"><h3>Silktide</h3><p>Simulator</p></li><li class="ablock top" data-s="3"><h3>CCA</h3><p>Contrast checker</p></li><li class="ablock top" data-s="4"><h3>Narrator / NVDA</h3><p>Screen readers</p></li></ul></div><div class="notes"><div><h3>Goal</h3><p>Show what each tool gives me.</p><h3>Say</h3><ul><li>What each tool gives me.</li><li>Silktide sends the page HTML to its servers: check the data rules.</li><li>Evidence: NVDA Speech Viewer, Narrator developer mode.</li><li>Screen off works on desktop too.</li></ul></div><div><h3>Transition</h3><p>What do real users use? Desktop and mobile.</p><h3>Backup (if asked)</h3><p>Shortcuts and menu paths: lecture 4.3.</p></div></div></section>
+<section class="slide" id="s31" data-ch="4" data-min="1" aria-labelledby="tS31"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS31">Who uses what: desktop and mobile</h2></header><div class="slide-body"><ul class="cards stats" role="list" style="--n:4"><li class="ablock top" data-s="0"><h3>JAWS</h3><p class="stat"><span class="lbl">Desktop</span><span class="sr-only">: </span><span class="big">55.0%</span></p></li><li class="ablock top" data-s="1"><h3>NVDA</h3><p class="stat"><span class="lbl">Desktop</span><span class="sr-only">: </span><span class="big">32.9%</span></p></li><li class="ablock top" data-s="2"><h3>VoiceOver (iPhone)</h3><p class="stat"><span class="lbl">Mobile</span><span class="sr-only">: </span><span class="big">72.2%</span></p></li><li class="ablock top" data-s="3"><h3>TalkBack (Android)</h3><p class="stat"><span class="lbl">Mobile</span><span class="sr-only">: </span><span class="big">29.5%</span></p></li></ul><p class="npanel " data-s="4">Test on real devices</p></div><div class="notes"><div><h3>Goal</h3><p>Which screen readers real users run, on desktop and mobile.</p><h3>Say</h3><ul><li>Desktop: Narrator is 0.4% as primary screen reader, but 36.1% use it regularly.</li><li>Europe: JAWS and NVDA equal.</li><li>Mobile: iPhone 73.3%, Safari 56.0%.</li><li>VoiceOver + Safari first, TalkBack + Chrome second.</li><li>Learn the gestures and set the shortcut first.</li><li>Repeat on the device; never infer from desktop.</li></ul></div><div><h3>Transition</h3><p>Mobile is a different test.</p><h3>Backup (if asked)</h3><p>Other mobile screen readers: lecture 4.4.</p></div></div></section>
+<section class="slide" id="s32" data-ch="4" data-min="1.25" aria-labelledby="tS32"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS32">Mobile is a different test</h2></header><div class="slide-body"><ul class="chevlist m" role="list"><li data-s="0">Swipe and tap instead of keys</li><li data-s="1">Other screen readers (VoiceOver, TalkBack)</li><li data-s="2">Small screens</li></ul><p class="npanel s" data-s="3"><span aria-hidden="true">→ </span><span class="sr-only">So: </span>A desktop test does not cover mobile</p><ul class="chevlist m" role="list"><li data-s="4">Test on mobile too: it reaches more users, and their number keeps growing</li><li data-s="5">Also test with the screen reader off</li></ul></div><div class="notes"><div><h3>Goal</h3><p>A desktop pass does not cover mobile; mobile reaches more and more users.</p><h3>Say</h3><ul><li>A desktop pass does not cover mobile: the user swipes and double-taps instead of using keys, listens to VoiceOver or TalkBack, on a small screen.</li><li>Some problems only exist on mobile: TalkBack has no landmarks by default, so headings matter.</li><li>With the screen reader off: gesture alternatives, pointer cancellation, motion, dragging, 24 × 24 px targets.</li><li>More than half of screen reader users use mobile at least as much as desktop (S07), and mobile keeps growing: skipping it means missing many users.</li><li>The how-to (gestures, rotor, rotation) is in Appendices D and E.</li></ul></div><div><h3>Transition</h3><p>Which leads to my final test.</p><h3>Backup (if asked)</h3><p>Gesture tables: Appendices D and E. Procedure: swipe, double-tap, rotor, rotate, then screen reader off.</p></div></div></section>
+<section class="slide" id="s33" data-ch="4" data-min="2" aria-labelledby="tS33"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS33">The final test: turn off the screen</h2></header><div class="slide-body"><p class="npanel " data-s="0">My final test, one any tester can do: run the main use cases with the screen off</p><ul class="chevlist s" role="list"><li data-s="1">If you get through them, the app is starting to be truly accessible (the best option without a visually impaired tester)</li><li data-s="2">It also shows the real severity of bugs: a “minor” issue on screen can leave you lost with the screen off</li></ul><p class="note-line" data-s="3"><span class="lbl">How</span>Screen Curtain (VoiceOver)<span aria-hidden="true"> · </span><span class="sr-only">, </span>Hide screen (TalkBack)<span aria-hidden="true"> · </span><span class="sr-only">, </span>how-to in Appendices D, E</p></div><div class="notes"><div><h3>Goal</h3><p>The turning point of the talk: any tester can run the main use cases with the screen off.</p><h3>Say</h3><ul><li>This is my final test, and any tester can do it, no disability needed.</li><li>Run the application’s main use cases with the screen off, using only the screen reader.</li><li>If you complete them, the app is starting to be truly accessible; it is the best option when you have no visually impaired tester.</li><li>It also changes how you judge severity: a bug that looks minor on screen (an unclear label, a missing heading, focus jumping) can leave you completely lost when you cannot see.</li><li>Field story: a BA got lost in their own application with the screen off.</li><li>You stop compensating with your eyes: if the task fails with the screen off, a blind user cannot complete it.</li><li>How: VoiceOver three-finger triple-tap (Screen Curtain); TalkBack menu option (Hide screen).</li></ul></div><div><h3>Transition</h3><p>Before automation: the visual checks, on desktop and mobile.</p><h3>Backup (if asked)</h3><p>The Hide-screen shortcut exists only in TalkBack 8.2 and earlier.</p></div></div></section>
+<section class="slide" id="s34" data-ch="4" data-min="1" aria-labelledby="tS34"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS34">Visual checks</h2></header><div class="slide-body"><ul class="chevlist l two" role="list"><li data-s="0">Zoom 200%</li><li data-s="1">Narrow screen 320 px</li><li data-s="2">Larger text spacing</li><li data-s="3">Contrast</li></ul><p class="npanel " data-s="4">Confirm in the browser’s accessibility tree</p></div><div class="notes"><div><h3>Goal</h3><p>The visual checks, on desktop and mobile.</p><h3>Say</h3><ul><li>Reflow = 1280 px at 400%.</li><li>Contrast is measured, not judged by eye; greyscale for colour.</li><li>The accessibility tree turns “it says <i>button</i>” into “no accessible name”.</li></ul></div><div><h3>Transition</h3><p>Why did manual testing come first? Because automation catches only part.</p><h3>Backup (if asked)</h3><p>Text-spacing values; failures F102, F104 (lecture 4.2).</p></div></div></section>
+<section class="slide" id="s35" data-ch="4" data-min="1.25" aria-labelledby="tS35"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS35">Automation: useful, but only part of the picture</h2></header><div class="slide-body"><ul class="chevlist " role="list"><li data-s="0"><b>Automated tests catch only part of accessibility problems</b></li><li data-s="1"><b>100% pass on automated checks<span aria-hidden="true"> ≠ </span><span class="sr-only"> does not mean an </span>accessible app</b></li><li data-s="2"><b>Still worth doing: fast, cheap, it clears the easy defects</b></li></ul></div><div class="notes"><div><h3>Goal</h3><p>Automation is useful but catches only part of the problems.</p><h3>Say</h3><ul><li>Automated tools are useful: they find the frequent, easy defects (contrast, missing alt text, missing labels, empty links and buttons) quickly, on every build.</li><li>But they catch only part of the problems (best single tool 41% in the GDS study; 57% of issues in Deque’s): meaning and behaviour need a human (is the label clear? is the order logical?).</li><li>So a 100% pass on an automated check does not mean the application is accessible.</li><li>Still worth doing: it clears the easy defects so manual testing can focus on the rest.</li></ul></div><div><h3>Transition</h3><p>Three tools I use.</p><h3>Backup (if asked)</h3><p>WebAIM Million 2026: 95.9% of home pages fail, 56.1 errors per page · GDS 2017: best tool 41%, all tools 71% · Deque 2021: 57% · “No errors detected” ≠ accessible (WebAIM).</p></div></div></section>
+<section class="slide" id="s36" data-ch="4" data-min="1" aria-labelledby="tS36"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS36">Three tools</h2></header><div class="slide-body"><ul class="cards lg" role="list" style="--n:3"><li class="ablock top" data-s="0"><h3>Lighthouse</h3><p>Browser audit</p></li><li class="ablock top" data-s="1"><h3>axe</h3><p>Accessibility test engine</p></li><li class="ablock top" data-s="2"><h3>Playwright</h3><p>Automated user journeys</p></li></ul></div><div class="notes"><div><h3>Goal</h3><p>Three tools and what each gives.</p><h3>Say</h3><ul><li>Lighthouse runs on axe: a score of 100 ≠ conformance; one element fails the audit; Snapshot mode for states.</li><li>axe “incomplete” = work for the tester.</li><li>Playwright + axe: scan states inside journeys; ARIA snapshots freeze a validated structure.</li></ul></div><div><h3>Transition</h3><p>Where they run: the pipeline.</p><h3>Backup (if asked)</h3><p>CLI, modes, tags: lecture 4.5.</p></div></div></section>
+<section class="slide" id="s37" data-ch="4" data-min="0.75" aria-labelledby="tS37"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS37">In the pipeline</h2></header><div class="slide-body"><p class="lead">Automated checks:</p><ol class="flow " role="list" style="--n:3"><li data-s="0"><div class="ablock top"><span class="lbl" aria-hidden="true">01</span><h3><span class="sr-only">Step 1 of 3: </span>While coding</h3></div></li><li data-s="1"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">02</span><h3><span class="sr-only">Step 2 of 3: </span>On each build</h3></div></li><li data-s="2"><span class="arrow" aria-hidden="true"><svg><use href="#i-chev"/></svg></span><div class="ablock top"><span class="lbl" aria-hidden="true">03</span><h3><span class="sr-only">Step 3 of 3: </span>Nightly</h3><p>Full scan</p></div></li></ol><p class="npanel " data-s="3">The build fails on new A/AA violations</p></div><div class="notes"><div><h3>Goal</h3><p>Where automated checks run, and what breaks the build.</p><h3>Say</h3><ul><li>Linter while coding; Playwright + axe and Lighthouse CI on each build; full scan nightly or before release.</li><li>Known violations recorded with owner and date.</li><li>“Incomplete” results → manual review.</li></ul></div><div><h3>Transition</h3><p>Beyond our own tests: audits.</p><h3>Backup (if asked)</h3><p>Microsoft automation-first workflow (lecture 4.5).</p></div></div></section>
+<section class="slide" id="s38" data-ch="4" data-min="1.25" aria-labelledby="tS38"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS38">Expert audit<span aria-hidden="true"> → </span><span class="sr-only">: </span>conformance level</h2></header><div class="slide-body"><ul class="chevlist " role="list"><li data-s="0">A complete audit by experts, against WCAG or RGAA</li><li data-s="1">Checks the whole product against all criteria</li><li data-s="2">Result: the conformance level reached + a list of corrections</li><li data-s="3">Outputs: audit report + public accessibility statement</li></ul></div><div class="notes"><div><h3>Goal</h3><p>What an expert audit gives: a conformance level and a correction list.</p><h3>Say</h3><ul><li>Done by WCAG experts, with a method: WCAG-EM 2 or RGAA.</li><li>One Level A failure → not A.</li><li>Corrections prioritised by level.</li><li>The report becomes the backlog; the accessibility statement is required in the public sector (WAD).</li><li>Prepare it with Appendix B, by conformance level.</li></ul></div><div><h3>Transition</h3><p>Conformance is one thing; real use is another.</p><h3>Backup (if asked)</h3><p>WCAG-EM 2 (July 2026): 5 steps; sample = structured + 10% random + complete processes. RGAA adds sampling, rate, test environment. Statement sections; when to plan.</p></div></div></section>
+<section class="slide" id="s39" data-ch="4" data-min="1.25" aria-labelledby="tS39"><header class="slide-head"><p class="kicker">How to test accessibility</p><h2 class="slide-title" id="tS39">Audit with a blind user<span aria-hidden="true"> → </span><span class="sr-only">: </span>is it really accessible?</h2></header><div class="slide-body"><ul class="chevlist " role="list"><li data-s="0">A blind user (e.g. with JAWS) tests real use of the app</li><li data-s="1">Result: whether the app is actually accessible, not only conformant</li><li data-s="2">Not always available</li></ul></div><div class="notes"><div><h3>Goal</h3><p>A blind user tells you whether the app can really be used.</p><h3>Say</h3><ul><li>Conformance says the rules are met; a blind user tells you if the app can really be used.</li><li>Finds problems no criterion describes, and convinces the team better than any report.</li><li>Limit: one person ≠ all users, and such testers are not always available → then the screen-off test (S33) is the best substitute.</li><li>On my projects: both audits together → one level, one correction list.</li></ul></div><div><h3>Transition</h3><p>Conformance is not real use: the floor, not the goal.</p></div></div></section>
+<section class="slide" id="s40" data-ch="5" data-min="1.25" aria-labelledby="tS40"><header class="slide-head"><p class="kicker">Conclusion</p><h2 class="slide-title" id="tS40">Two ideas to keep: the floor, and the team</h2></header><div class="slide-body"><div class="cols"><div class="ablock" data-s="0"><h3><span class="lbl" aria-hidden="true">1</span><span class="sr-only">1. </span>AA is the floor, not the goal</h3><p>The minimum we must reach</p><p>The real goal: people with impairments can actually use the app</p></div><div class="ablock" data-s="1"><h3><span class="lbl" aria-hidden="true">2</span><span class="sr-only">2. </span>Teamwork</h3><p>No single role can do it alone</p><p>PO/BA, designer, developer, tester and test manager each act at their level</p></div></div></div><div class="notes"><div><h3>Goal</h3><p>Two ideas to take home: AA is the floor, and it is a team job.</p><h3>Say</h3><ul><li>Two ideas to take home.</li><li>The floor: passing WCAG AA is the minimum the law asks for, not the finish line; an app can conform and still be hard to use.</li><li>What counts is real use: can a blind or keyboard user complete the task? (the screen-off test, the blind-user audit).</li><li>Small details, large impact: one missing label can block a whole process.</li><li>Teamwork: no single role can do it alone. The PO/BA writes it in the stories, the designer in the mock-ups, the developer in the code, the tester verifies, the test manager plans it from the start.</li></ul></div><div><h3>Transition</h3><p>So: one change for your next sprint.</p><h3>Backup (if asked)</h3><p>Role table in the lecture Conclusion.</p></div></div></section>
+<section class="slide" id="s41" data-ch="5" data-min="1.5" aria-labelledby="tS41"><header class="slide-head"><p class="kicker">Conclusion</p><h2 class="slide-title" id="tS41">One change</h2></header><div class="slide-body top"><p class="qpanel" data-s="0"><span class="qlbl">Audience question<span aria-hidden="true"> · </span><span class="sr-only">, </span>Q4</span><span class="qtext">“One change for your next sprint?”</span></p><table class="dtable"><thead><tr><th scope="col">Role</th><th scope="col">One first step</th></tr></thead><tbody><tr data-s="1"><th scope="row">Everyone</th><td>Read the WCAG criteria (<a href="https://www.w3.org/WAI/WCAG22/quickref/">Quick Reference</a>)</td></tr><tr data-s="2"><th scope="row">Developer</th><td>Read how to use ARIA (<a href="https://www.w3.org/WAI/ARIA/apg/">ARIA Authoring Practices Guide</a>)</td></tr><tr data-s="3"><th scope="row">Tester</th><td>Play with ARIA DevTools on your own app, then one journey with the screen off</td></tr><tr data-s="4"><th scope="row">PO/BA</th><td>Write one accessibility acceptance criterion in your next story; try the WAI Easy Checks (<a href="https://www.w3.org/WAI/test-evaluate/preliminary/">w3.org/WAI/test-evaluate/preliminary</a>) on your product</td></tr><tr data-s="5"><th scope="row">Test manager</th><td>Add accessibility to the test strategy and the Definition of Done; plan which key journeys get a screen-off test before release</td></tr></tbody></table></div><div class="notes"><div><h3>Goal</h3><p>Turn the talk into action: one small, concrete change per person.</p><h3>Say</h3><ul><li>I ask each person to pick one small, concrete change they can try in their next sprint, so they leave with a first step, not just ideas.</li><li>Everyone: read the WCAG criteria in the Quick Reference; this is the basis for everything else.</li><li>Developer: read how to use ARIA in the Authoring Practices Guide (patterns for menus, dialogs, tabs, with working examples), then add a keyboard test on each new component.</li><li>Tester: play with ARIA DevTools on your own app to see what a screen reader gets, then one journey with VoiceOver or TalkBack, screen off. Test automation: axe in one automated journey.</li><li>PO/BA: write one accessibility acceptance criterion in the next story, and try the WAI Easy Checks on your product to see where it stands.</li><li>Test manager: put accessibility in the test strategy and the Definition of Done, so it is planned and not optional; pick the key journeys that get a screen-off test before each release, and agree the target level (AA) with the team.</li></ul></div><div><h3>Audience question</h3><p>Q4: “One change for your next sprint?” Each person picks one; two or three shared.</p><h3>Transition</h3><p>To close: one sentence.</p></div></div></section>
+<section class="slide photo closing on-dark-slide" id="s42" data-ch="5" data-min="0.5" aria-labelledby="tS42" style="background-image:linear-gradient(rgba(51,63,72,.92), rgba(51,63,72,.92)), url('images/image4.jpeg')"><div class="photo-body"><p class="kicker">Conclusion · take-home message</p><h2 class="sr-only" id="tS42">Closing: take-home message</h2><p class="statement"><span>“A feature is done when it works…</span><span data-s="1">without a mouse…</span><span data-s="2">without colour…</span><span data-s="3" class="last">without the screen.”</span></p><p class="test-line" data-s="4">This deck: WCAG 2.2 AA, tested with keyboard only, axe-core on every slide and step, computed contrast ratios (including over photos), accessibility-tree checks (landmarks, headings, lists, reading order), 200&nbsp;% browser zoom and reduced motion.</p></div><div class="notes"><div><h3>Goal</h3><p>Leave the room with the take-home message.</p><h3>Say</h3><ul><li>The three conditions: without a mouse = keyboard (2.1.1); without colour = not colour alone (1.4.1); without the screen = screen reader with the screen off.</li><li>This deck itself targets WCAG 2.2 AA; the line below says how it was tested.</li></ul></div><div><h3>Transition</h3><p>The references for later, then questions.</p></div></div></section>
+<section class="slide" id="s43" data-ch="6" data-min="0.25" aria-labelledby="tS43"><header class="slide-head"><p class="kicker">References</p><h2 class="slide-title" id="tS43">References: standards and laws</h2></header><div class="slide-body top"><dl class="reflist"><dt>W3C and WAI</dt><dd><a href="https://www.w3.org/WAI/">w3.org/WAI</a></dd><dt>WCAG 2.2</dt><dd><a href="https://www.w3.org/TR/WCAG22/">w3.org/TR/WCAG22</a></dd><dt>WAI-ARIA 1.2</dt><dd><a href="https://www.w3.org/TR/wai-aria-1.2/">w3.org/TR/wai-aria-1.2</a></dd><dt>ARIA Authoring Practices Guide (APG)</dt><dd><a href="https://www.w3.org/WAI/ARIA/apg/">w3.org/WAI/ARIA/apg</a></dd><dt>EU</dt><dd><a href="https://eur-lex.europa.eu/eli/dir/2016/2102/oj">Web Accessibility Directive 2016/2102</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://eur-lex.europa.eu/eli/dir/2019/882/oj">European Accessibility Act 2019/882</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://www.etsi.org/deliver/etsi_en/301500_301599/301549/">EN 301 549</a></dd><dt>France</dt><dd><a href="https://accessibilite.numerique.gouv.fr/">RGAA (accessibilite.numerique.gouv.fr)</a></dd><dt>Switzerland</dt><dd><a href="https://www.fedlex.admin.ch/eli/cc/2003/667/fr">LHand (SR 151.3)</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://www.ech.ch/fr/ech/ech-0059/3.0">eCH-0059</a></dd></dl></div><div class="notes"><div><h3>Goal</h3><p>Every standard and law cited in the talk, in one place to read later.</p><h3>Say</h3><ul><li>Every standard and law cited in the talk, in one place.</li><li>WAD covers public-sector websites and apps (statement, feedback, monitoring).</li><li>EAA covers products and services, including the private sector, from 28 June 2025.</li><li>EN 301 549: V3.2.1 (2021) = WCAG 2.1, V4.1.1 (2026) = WCAG 2.2; it goes beyond WCAG.</li></ul></div><div><h3>Transition</h3><p>Tools and where to start.</p><h3>Backup (if asked)</h3><p>Links point to eur-lex.europa.eu (WAD, EAA), etsi.org (EN 301 549), fedlex.admin.ch (LHand), ech.ch (eCH-0059), as in the lecture material. EU implementing decisions: lecture 2.4.</p></div></div></section>
+<section class="slide" id="s44" data-ch="6" data-min="0.25" aria-labelledby="tS44"><header class="slide-head"><p class="kicker">References</p><h2 class="slide-title" id="tS44">References: testing tools and where to start</h2></header><div class="slide-body top"><dl class="reflist"><dt>Manual testing</dt><dd>Browser DevTools<span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://chromewebstore.google.com/detail/aria-devtools/dneemiigcbbgbdjlcdjjnianlikimpck">ARIA DevTools</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://silktide.com/toolbar/">Silktide</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://github.com/ThePacielloGroup/CCAe">Colour Contrast Analyser (CCA)</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://www.nvaccess.org/about-nvda/">NVDA</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://support.microsoft.com/en-us/accessibility/windows/narrator/complete-guide-to-narrator">Narrator</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://support.apple.com/guide/iphone/turn-on-and-practice-voiceover-iph3e2e415f/ios">VoiceOver</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://support.google.com/accessibility/android/answer/6283677">TalkBack</a></dd><dt>Automated testing</dt><dd><a href="https://developer.chrome.com/docs/devtools/lighthouse">Lighthouse</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://github.com/dequelabs/axe-core">axe</a><span class="sep" aria-hidden="true">·</span><span class="sr-only">, </span><a href="https://playwright.dev/docs/accessibility-testing">Playwright</a></dd><dt>Where to start</dt><dd>Newcomer<span aria-hidden="true"> → </span><span class="sr-only">: </span><a href="https://www.w3.org/WAI/fundamentals/">Accessibility Fundamentals</a><br>Developer<span aria-hidden="true"> → </span><span class="sr-only">: </span><a href="https://www.w3.org/WAI/WCAG22/quickref/">WCAG Quick Reference</a> + <a href="https://www.w3.org/WAI/ARIA/apg/">APG</a><br>Tester<span aria-hidden="true"> → </span><span class="sr-only">: </span>Quick Reference, <a href="https://www.w3.org/WAI/WCAG22/Understanding/">Understanding WCAG</a>, <a href="https://www.w3.org/TR/wcag-em-2/">WCAG-EM 2</a><br>PO/BA<span aria-hidden="true"> → </span><span class="sr-only">: </span>Easy Checks: <a href="https://www.w3.org/WAI/test-evaluate/preliminary/">w3.org/WAI/test-evaluate/preliminary</a></dd><dt>My guides</dt><dd>Appendices A–E</dd></dl></div><div class="notes"><div><h3>Goal</h3><p>The tools of Chapter 4 and where to start, by role.</p><h3>Say</h3><ul><li>The tools shown in Chapter 4, grouped by use, with a link for each to try after the session.</li><li>Where to start depending on your role.</li><li>Only WCAG itself is normative; the rest is informative.</li><li>WCAG 3 is a draft, not a standard.</li><li>My guides (Appendices A–E) are shared after the session.</li></ul></div><div><h3>Transition</h3><p>This slide stays on screen during Q&amp;A.</p><h3>Backup (if asked)</h3><p>Links as in the lecture material (4.3, 4.5, 5.5–5.7): nvaccess.org, CCA on GitHub (TPGi), silktide.com, Chrome DevTools Lighthouse, axe-core, playwright.dev.</p></div></div></section>
+  </main>
+  <footer id="deck-foot">
+    <img src="images/image1.png" class="footer-logo" id="foot-logo" alt="Itecor">
+    <p class="footerbar">itecor Geneva<span class="chev" aria-hidden="true"> › </span><span class="sr-only">, </span>Turn Off the Screen<span class="chev" aria-hidden="true"> › </span><span class="sr-only">, </span>27.11.2026</p>
+    <div class="corner-triangle" aria-hidden="true"></div>
+    <div class="stepnav"><button type="button" id="btn-prev" aria-label="Previous"><svg aria-hidden="true" focusable="false"><use href="#i-chev"/></svg></button><button type="button" id="btn-next" aria-label="Next"><svg aria-hidden="true" focusable="false"><use href="#i-chev"/></svg></button></div>
+    <p id="count"><span aria-hidden="true"><b id="count-cur">1</b>&nbsp;/&nbsp;<span id="count-total">1</span></span><span class="sr-only" id="count-sr">Slide 1 of 44</span></p>
+  </footer>
+</div>
 
-  <!-- Left-edge chapter progress rail; content injected by JS. -->
-  <div id="chapter-rail"></div>
-
-  <!-- Slide counter, top-right. -->
-  <div id="count"><b id="count-cur">1</b>&nbsp;/&nbsp;<span id="count-total">1</span></div>
-
-
-  <!-- ================================================================
-       SLIDE 1 — COVER
-       ================================================================ -->
-  <section class="slide cover on" data-ch="0">
-    <img src="images/image7.png" class="cover-logo" alt="Itecor logo">
-    <div class="cover-text">
-      <h1 class="cover-title">Never Losing My Notes</h1>
-      <p class="cover-subtitle">How I built my notes to be found — powered by Obsidian</p>
-    </div>
-    <div class="title-meta">Presenter Name<br>Date</div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 2 — Intro / The thesis
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="0">
-    <h3 class="content-title">The thesis</h3>
-    <div class="slide-body">
-      <!-- This is the single sentence the whole talk answers — deliberately
-           the LARGEST text in the deck (bigger than the default .slide p
-           size), set inline here rather than via the shared class since
-           no other slide should automatically inherit this exact size. -->
-      <p style="font-size:2.6em; font-weight:700; max-width:1050px;">
-        A note-taking app is only as good as
-        <span style="color:var(--accent1);">getting information back out.</span>
-      </p>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 3 — Intro / The familiar pain
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="0">
-    <h3 class="content-title">The familiar pain</h3>
-    <div class="slide-body">
-      <div class="calloutbox reveal-step" data-s="0">
-        <p>The app makes <i>you</i> adapt to its structure — not the other way around.</p>
-      </div>
-      <p class="reveal-step" data-s="1" style="margin-top:0.6em;">
-        So if you don't already remember <i>where</i> you filed it, you will never find it again.
-      </p>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 4 — Intro / Where we're headed
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="0">
-    <h3 class="content-title">Where we're headed</h3>
-    <div class="slide-body">
-      <ul class="chevlist">
-        <li data-s="0"><b>2</b> — Foundation / the raw materials</li>
-        <li data-s="1"><b>3</b> — Structure / hubs &amp; schema</li>
-        <li data-s="2"><b>4</b> — Architecture &amp; rhythm</li>
-        <li data-s="3"><b>5</b> — AI, the capstone</li>
-        <li data-s="4"><b>6</b> — Reality check &amp; close</li>
-      </ul>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 5 — CHAPTER DIVIDER: Foundation
-       Background photo set inline below (image16.jpg, matching the
-       original deck's divider for this chapter) — edit the url(...) here
-       to swap the photo for this specific divider.
-       ================================================================ -->
-  <section class="slide divider" data-ch="1" style="background-image:url('images/image16.jpg');">
-    <div class="scrim"></div>
-    <div class="divider-wrap">
-      <div class="divider-left">
-        <h2 class="sectiontitle">Foundation</h2>
-        <p class="sectionsub">The raw materials</p>
-      </div>
-      <div class="sectionnum">2</div>
-    </div>
-    <img src="images/image7.png" class="footer-logo" alt="itecor" style="z-index:1;">
-    <div class="chevron-badge">
-      <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
-    </div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 6 — Foundation / What is Obsidian?
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="1">
-    <h3 class="content-title">What is Obsidian?</h3>
-    <img src="images/Obsidian_Logo.jpg" class="img-bg" alt="">
-    <div class="slide-body">
-      <p><b>Obsidian</b> — a free, local-first note-taking app.</p>
-      <ul class="chevlist">
-        <li data-s="0">Notes are markdown files stored on your own disk</li>
-        <li data-s="1">Based on hyperlinks and tags</li>
-        <li data-s="2">Extensible through community plugins</li>
-        <li data-s="3">Even this presentation is built in it</li>
-      </ul>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 7 — Foundation / Notes built to last
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="1">
-    <h3 class="content-title">Notes built to last</h3>
-    <div class="slide-body">
-      <ul class="chevlist">
-        <li data-s="0">Every note is a markdown file on your disk</li>
-        <li data-s="1">Private — your data, your machine</li>
-        <li data-s="2">Durable — readable in 20 years, by anything</li>
-      </ul>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 8 — Foundation / Quick, organised, open (Markdown)
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="1">
-    <h3 class="content-title">Quick, organised, open.</h3>
-    <img src="images/MarkdownImage.png" class="img-bg" alt="">
-    <div class="slide-body">
-      <p>Markdown is just text with light formatting marks — no proprietary format, no lock-in, opens in literally anything.</p>
-      <p class="reveal-step" data-s="0">
-        <code># Heading</code> &nbsp; <code>**bold**</code> &nbsp; <code>- list item</code><br>
-        <code>- [ ] checkbox</code> <code>&gt; [!callout]</code>
-      </p>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 9 — Foundation / Connect ideas as you write (Links)
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="1">
-    <h3 class="content-title">Connect ideas as you write</h3>
-    <img src="images/LinksBetweenNotes.jpg" class="img-bg" alt="">
-    <div class="slide-body">
-      <p>Type <code>[[note name]]</code> and two notes are <b>linked</b>.</p>
-      <p>No folder decision required — every link is a small act of retrieval, waiting for later.</p>
-      <p class="reveal-step" data-s="0">Add <code>#tag</code> to further connect the concepts.</p>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 10 — Foundation / Classify every note the same way (Properties)
-       ================================================================ -->
-  <section class="slide with-rail" data-ch="1">
-    <h3 class="content-title">Classify every note the same way</h3>
-    <div class="slide-body">
-      <p>Every note can carry <b>properties</b> — simple key : value pairs at the top of the file (YAML frontmatter).</p>
-      <div class="calloutbox reveal-step" data-s="0">
-        <p>Same shape every time → easy to filter and query later.</p>
-      </div>
-    </div>
-    <img src="images/image1.png" class="footer-logo" alt="itecor">
-    <div class="footerbar">itecor Geneva <span class="chev">›</span> Obsidian Brown Bag <span class="chev">›</span> InsertDate</div>
-    <div class="corner-triangle"></div>
-  </section>
-
-
-  <!-- ================================================================
-       SLIDE 11 — DEMO: Foundation recap
-       ================================================================ -->
-  <section class="slide demo" data-ch="1">
-    <div class="demo-left">
-      <div class="demo-label">Demo</div>
-    </div>
-    <div class="demo-right">
-      <ul class="demo-list">
-        <li>Markdown</li>
-        <li>Links and tags</li>
-        <li>Properties</li>
-      </ul>
-    </div>
-    <div class="demo-chevron-big">
-      <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
-    </div>
-    <!-- image7.png is already the LIGHT/white-on-transparent logo variant
-         (per Itecor asset naming), so no CSS filter is applied here — a
-         previous version incorrectly ran filter:invert(1) brightness(2)
-         on it, which distorted its real colors. Left plain so it renders
-         exactly as exported. -->
-    <img src="images/image7.png" class="footer-logo" alt="itecor" style="z-index:3;">
-  </section>
-
-</div><!-- /#stage -->
+<aside id="notes" aria-labelledby="notes-h" hidden>
+  <div class="nhead"><h2 id="notes-h">Speaker notes</h2><span class="meta" id="notes-meta"></span><span class="hint">N or Esc to hide</span></div>
+  <div class="nbody" id="notes-body" tabindex="0" role="region" aria-label="Notes text"></div>
+</aside>
 
 <script>
-/* ============================================================================
-   PAGING + CHAPTER-RAIL ENGINE
-   Direct structural port of the reference site's engine (moon-phase rail +
-   fade-step reveal + fixed-canvas scaling), adapted to Itecor's visual
-   language. Nothing here needs to change when you edit slide TEXT — only
-   touch this if you are adding a new chapter or changing how paging works.
-   ============================================================================ */
-
-// ---- 1. CHAPTERS ----------------------------------------------------------
-// One entry per chapter shown on the rail. `match` is the data-ch value used
-// on <section data-ch="N"> above. Order here = order on the rail (top to
-// bottom). Add a chapter by adding a row here — nothing else to renumber.
 const CHAPTERS = [
-  { match: 0, label: 'Intro',       ac: '#FE5000' },
-  { match: 1, label: 'Foundation',  ac: '#FE5000' },
-  // Structure / Architecture / AI / Conclusion chapters will be appended
-  // here in the next pass once Chapter 2 is approved.
+  { icon:'intro', label:'Intro' },
+  { icon:'ch1',   label:'1 Introduction to accessibility' },
+  { icon:'ch2',   label:'2 Principles and legislation' },
+  { icon:'ch3',   label:'3 How to build accessible' },
+  { icon:'ch4',   label:'4 How to test accessibility' },
+  { icon:'concl', label:'Conclusion' },
+  { icon:'refs',  label:'References' },
 ];
-
-const slides = [...document.querySelectorAll('.slide')];
+const store = { get(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+                set(k,v){ try { localStorage.setItem(k,v); } catch(e){} } };
+const slides = [...document.querySelectorAll('#deck .slide')];
 const railEl = document.getElementById('chapter-rail');
+const RANGE = CHAPTERS.map((c,i) => { const idx = slides.map((s,j) => +s.dataset.ch === i ? j + 1 : 0).filter(Boolean);
+  return idx.length === 1 ? `Slide ${idx[0]}` : `Slides ${idx[0]} to ${idx[idx.length - 1]}`; });
+railEl.innerHTML = '<div class="rail-fill" id="rail-fill"></div><ul class="rail-chapters" role="list">' +
+  CHAPTERS.map((c,i)=>`<li><button class="rail-chapter" type="button" data-i="${i}" aria-label="${c.label}" aria-describedby="rail-d${i}"><span class="node" aria-hidden="true"><svg><use href="#i-${c.icon}"/></svg></span><span class="tip" aria-hidden="true">${c.label}</span></button><span id="rail-d${i}" hidden>${RANGE[i]}</span></li>`).join('') + '</ul>';
+railEl.addEventListener('mouseover', () => railEl.classList.remove('tips-off'));
+railEl.addEventListener('focusin', () => railEl.classList.remove('tips-off'));
+const railFill = document.getElementById('rail-fill');
+const railBtns = [...railEl.querySelectorAll('.rail-chapter')];
+railBtns.forEach(b => b.addEventListener('click', () => {
+  const i = +b.dataset.i;
+  let t = slides.findIndex(s => +s.dataset.ch >= i);
+  if (t === -1) t = slides.length - 1;
+  go(t, 0, !allMode);
+  if (allMode) focusSlide(t);
+}));
 
-// ---- 2. BUILD THE RAIL (once) ---------------------------------------------
-// REDESIGNED: instead of showing only the current chapter's name, the rail
-// now lists EVERY chapter at all times (see .rail-chapters below), plus a
-// thin connecting line with a small chevron that still slides continuously
-// to reflect exact progress through the whole deck. Each chapter row is a
-// real <button> so it can be clicked to jump straight to that chapter.
-railEl.innerHTML = `
-  <div class="rail-fill" id="rail-fill"></div>
-  <div class="rail-marker" id="rail-marker">
-    <svg viewBox="0 0 340.16 340.16" xmlns="http://www.w3.org/2000/svg"><path d="M105.8 338.06 61.38 286.75 168.23 169.47 61.38 52.19 105.8 1.53 284.37 169.47Z" fill="currentColor"/></svg>
-  </div>
-  <div class="rail-chapters" id="rail-chapters">
-    ${CHAPTERS.map((c, i) => `
-      <button class="rail-chapter" data-chapter-index="${i}" type="button">
-        <span class="dot"></span>
-        <span class="lbl">${c.label}</span>
-      </button>
-    `).join('')}
-  </div>
-`;
-const railFill     = document.getElementById('rail-fill');
-const railMarker    = document.getElementById('rail-marker');
-const railChapters  = [...document.querySelectorAll('.rail-chapter')];
+const notesEl = document.getElementById('notes'), notesBody = document.getElementById('notes-body'), notesMeta = document.getElementById('notes-meta');
+const btnNotes = document.getElementById('btn-notes'), btnReflow = document.getElementById('btn-reflow'), btnNkey = document.getElementById('btn-nkey');
+const btnAll = document.getElementById('btn-all'), btnPrev = document.getElementById('btn-prev'), btnNext = document.getElementById('btn-next');
+let allMode = false;
+const announceEl = document.getElementById('announce');
+const stage = document.getElementById('stage'), footLogo = document.getElementById('foot-logo');
+let nKeyOn = store.get('tots-nkey') !== 'off';
+let reflowManual = store.get('tots-reflow') === 'on';
+const dpr0 = window.devicePixelRatio || 1;
 
-// Clicking a chapter row jumps to that chapter's FIRST slide.
-railChapters.forEach(btn => {
-  btn.addEventListener('click', () => {
-    const chIdx = +btn.dataset.chapterIndex;
-    const target = slides.findIndex(s => +s.dataset.ch === chIdx);
-    if (target !== -1) go(target, 0);
-  });
-});
+let cur = 0, step = 0;
+const maxStep = s => { let m = -1; s.querySelectorAll('[data-s]').forEach(e => m = Math.max(m, +e.dataset.s)); return m + 1; };
+// Text as a screen reader gets it: aria-hidden parts removed, sr-only parts kept
+const spoken = el => { const c = el.cloneNode(true); c.querySelectorAll('[aria-hidden="true"], .notes').forEach(x => x.remove());
+  c.querySelectorAll('h3, h4, p, li, dt, dd, th, td, div').forEach(x => x.append(' '));
+  return c.textContent.replace(/\s+/g,' ').replace(/\s+([,.:])/g,'$1').trim(); };
+const titleOf = s => spoken(s.querySelector('h2'));
 
-// ---- 3. STATE ---------------------------------------------------------------
-let cur = 0;   // current slide index
-let step = 0;  // current reveal-step within that slide
-
-// How many reveal-steps does a slide have? (highest data-s + 1, or 0 if none)
-function maxStep(slide){
-  const stepEls = slide.querySelectorAll('[data-s]');
-  let m = -1;
-  stepEls.forEach(el => { m = Math.max(m, +el.dataset.s); });
-  return m + 1; // number of steps (0 if no [data-s] elements at all)
+function fillNotes(){
+  const s = slides[cur], n = s.querySelector('.notes');
+  notesMeta.textContent = `Slide ${cur + 1} of ${slides.length} · ${s.dataset.min} min · step ${step + 1} of ${Math.max(1, maxStep(s))}`;
+  notesBody.innerHTML = n ? n.innerHTML : '';
+  if (cur < slides.length - 1) notesBody.insertAdjacentHTML('beforeend', `<p class="next">Next slide: ${titleOf(slides[cur + 1])}</p>`);
 }
-
-// ---- 4. RENDER ---------------------------------------------------------------
-function render(){
-  const slide = slides[cur];
-  const ch = +slide.dataset.ch;
-  const chInfo = CHAPTERS[ch] || CHAPTERS[0];
-
-  // Per-chapter accent color, used by .content-title, chevlist bullets, etc.
-  document.documentElement.style.setProperty('--ac', chInfo.ac);
-
-  // Show/hide slides.
-  slides.forEach((s, i) => s.classList.toggle('on', i === cur));
-
-  // Slide counter.
+function render(announce){
+  const slide = slides[cur], ch = +slide.dataset.ch;
+  slides.forEach((s,i) => { s.classList.toggle('on', i === cur); s.toggleAttribute('inert', i !== cur); });
+  slides.forEach((s,i) => { if (i !== cur) s.querySelectorAll('[data-s].on').forEach(e => e.classList.remove('on')); });
+  slide.querySelectorAll('[data-s]').forEach(e => e.classList.toggle('on', step >= +e.dataset.s));
   document.getElementById('count-cur').textContent = cur + 1;
   document.getElementById('count-total').textContent = slides.length;
-
-  // Walk reveal-steps: anything with data-s <= current step gets "on".
-  slide.querySelectorAll('[data-s]').forEach(el => {
-    el.classList.toggle('on', step >= +el.dataset.s);
-  });
-
-  // Chapter rail: ALWAYS visible now (previously hidden on cover/divider/
-  // demo slides — the old rail only made sense mid-chapter since it showed
-  // just one floating label, but the new full chapter-list version reads
-  // fine on every slide type, including dividers, since it now doubles as
-  // a persistent "where am I in the whole talk" map).
-  //
-  // Two things get updated:
-  //  1. Each .rail-chapter row gets .past (already gone through) or .now
-  //     (this is the active chapter) so its dot/label styling updates.
-  //  2. The thin connecting line + chevron marker still slide to a
-  //     continuous position based on (slides seen so far / total slides)
-  //     — this preserves the fine-grained "how far into the WHOLE deck"
-  //     feel, layered on top of the coarser per-chapter list.
-  railChapters.forEach((btn, i) => {
-    btn.classList.toggle('now', i === ch);
-    btn.classList.toggle('past', i < ch);
-  });
-  // Pixel-accurate line/marker position: the visible line runs from
-  // 0.9em to (rail height - 0.9em) per the CSS (top:0.9em; bottom:0.9em
-  // on #chapter-rail::before) — computing a plain percentage of the FULL
-  // rail height would place the marker slightly outside that visible
-  // range at the very top/bottom of the deck. Reading the rail's actual
-  // rendered height here and subtracting the same 0.9em inset on both
-  // ends keeps the marker exactly on the line at all times, including at
-  // slide 1 and the final slide.
-  const railRect = railEl.getBoundingClientRect();
-  const inset = 0.9 * 16; // 0.9em in px, assuming the default 16px root font-size
-  const usableHeight = railRect.height - inset * 2;
-  const pct = (cur + 1) / slides.length; // 0..1, "how far through the whole deck"
-  const fillPx = usableHeight * pct; // .rail-fill's OWN top is already offset by `inset` in CSS, so its height is measured from there, not from 0
-  railFill.style.height = fillPx + 'px';
-  railMarker.style.top = (inset + fillPx) + 'px'; // marker's top IS measured from #chapter-rail's own edge, so it needs the full inset added back in
-
-  // Slide counter color: light text on dark slide types (cover/divider),
-  // dark text everywhere else. See #count.on-dark in the CSS.
-  const isDarkSlide = slide.classList.contains('cover') || slide.classList.contains('divider');
-  document.getElementById('count').classList.toggle('on-dark', isDarkSlide);
-}
-
-// ---- 5. NAVIGATION -----------------------------------------------------------
-function go(i, st){
-  cur = Math.max(0, Math.min(slides.length - 1, i));
-  step = st;
-  render();
-}
-
-// Jump to the FIRST slide of the next/previous chapter (used by ArrowUp/
-// ArrowDown — see keydown handler below). "Next chapter" = the first slide
-// index whose data-ch is strictly greater than the current slide's data-ch;
-// "previous chapter" = the first slide index whose data-ch equals the
-// PREVIOUS chapter number (so Up from the middle of a chapter goes to that
-// chapter's own divider, not skips two chapters back — pressing Up again
-// from there continues one more chapter back, same as most slide software).
-function goToNextChapter(){
-  const curCh = +slides[cur].dataset.ch;
-  const idx = slides.findIndex(s => +s.dataset.ch > curCh);
-  if (idx !== -1) go(idx, 0);
-}
-function goToPrevChapter(){
-  const curCh = +slides[cur].dataset.ch;
-  // Find where the CURRENT chapter starts.
-  const curChStart = slides.findIndex(s => +s.dataset.ch === curCh);
-  if (cur > curChStart) {
-    // We're mid-chapter: Up/PageUp-style jump goes to THIS chapter's start first.
-    go(curChStart, 0);
-    return;
+  railBtns.forEach((b,i) => { b.classList.toggle('now', i === ch); b.classList.toggle('past', i < ch);
+    if (i === ch) b.setAttribute('aria-current','true'); else b.removeAttribute('aria-current');
+    document.getElementById('rail-d' + i).textContent = (i === ch ? `You are on slide ${cur + 1} of ${slides.length}. ` : '') + RANGE[i]; });
+  document.getElementById('count-sr').textContent = `Slide ${cur + 1} of ${slides.length}`;
+  const usable = railEl.offsetHeight - 24;
+  railFill.style.height = (usable * (cur + 1) / slides.length) + 'px';
+  if (allMode) slides.forEach(s => s.removeAttribute('inert'));
+  const atStart = cur === 0 && step === 0, atEnd = cur === slides.length - 1 && step >= maxStep(slide) - 1;
+  btnPrev.setAttribute('aria-disabled', String(atStart)); btnNext.setAttribute('aria-disabled', String(atEnd));
+  const dark = !allMode && slide.classList.contains('on-dark-slide');
+  document.getElementById('count').classList.toggle('on-dark', dark);
+  stage.classList.toggle('dark', dark);
+  footLogo.src = dark ? 'images/image7.png' : 'images/image1.png';
+  railEl.classList.toggle('on-dark', dark);
+  if (!notesEl.hidden) fillNotes();
+  if (announce) {
+    announceEl.textContent = `Slide ${cur + 1} of ${slides.length}: ${titleOf(slide)}`;
+    if (document.body.classList.contains('reflow') && !allMode) window.scrollTo(0, 0);
   }
-  // Already at this chapter's first slide: jump back to the previous
-  // chapter's first slide instead.
-  const prevCh = curCh - 1;
-  if (prevCh < 0) return;
-  const idx = slides.findIndex(s => +s.dataset.ch === prevCh);
-  if (idx !== -1) go(idx, 0);
 }
+function go(i, st, announce){ cur = Math.max(0, Math.min(slides.length - 1, i)); step = st; render(announce); }
+function announceStep(){
+  const s = slides[cur];
+  const txt = [...s.querySelectorAll(`[data-s="${step}"]`)].map(spoken).join(' ');
+  announceEl.textContent = txt;
+}
+function next(){ if (step < maxStep(slides[cur]) - 1) { step++; render(false); announceStep(); } else if (cur < slides.length - 1) go(cur + 1, 0, true); }
+function prev(){ if (step > 0) { step--; render(false); announceEl.textContent = 'Previous step'; } else if (cur > 0) go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1), true); }
 
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowRight' || e.key === ' ') {
-    e.preventDefault();
-    if (step < maxStep(slides[cur]) - 1) { step++; render(); }
-    else if (cur < slides.length - 1) go(cur + 1, 0);
-  } else if (e.key === 'ArrowLeft') {
-    e.preventDefault();
-    if (step > 0) { step--; render(); }
-    else if (cur > 0) go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1));
-  } else if (e.key === 'ArrowDown') {
-    // Down = jump forward to the next CHAPTER (skips intervening content
-    // slides entirely, lands on that chapter's divider).
-    e.preventDefault();
-    goToNextChapter();
-  } else if (e.key === 'ArrowUp') {
-    // Up = jump back to the start of this chapter, or the previous
-    // chapter's start if already there.
-    e.preventDefault();
-    goToPrevChapter();
-  }
+function setNotes(open){
+  notesEl.hidden = !open;
+  btnNotes.setAttribute('aria-pressed', String(open));
+  if (open) fillNotes();
+  fit();
+  announceEl.textContent = open ? 'Speaker notes shown' : 'Speaker notes hidden';
+}
+function setNkey(on){
+  nKeyOn = on; store.set('tots-nkey', on ? 'on' : 'off');
+  btnNkey.setAttribute('aria-pressed', String(on));
+  btnNkey.textContent = on ? 'N shortcut on' : 'N shortcut off';
+  btnNotes.textContent = on ? 'Speaker notes (N)' : 'Speaker notes';
+}
+function focusSlide(i){ const h = slides[i].querySelector('h2'); h.setAttribute('tabindex', '-1'); h.focus(); }
+function setAll(on){
+  allMode = on; document.body.classList.toggle('all', on);
+  btnAll.setAttribute('aria-pressed', String(on));
+  // one page: no region per slide (44 landmarks), headings carry the navigation
+  slides.forEach(s => { if (on) { s.dataset.lb = s.getAttribute('aria-labelledby'); s.removeAttribute('aria-labelledby'); }
+                        else if (s.dataset.lb) s.setAttribute('aria-labelledby', s.dataset.lb); });
+  fit(); render(false);
+  if (on) { announceEl.textContent = 'All 44 slides on one page. Use headings to move from slide to slide.'; focusSlide(cur); }
+  else { announceEl.textContent = `Slide by slide. Slide ${cur + 1} of ${slides.length}: ${titleOf(slides[cur])}`; window.scrollTo(0, 0); }
+}
+btnAll.addEventListener('click', () => setAll(!allMode));
+btnPrev.addEventListener('click', () => { if (btnPrev.getAttribute('aria-disabled') !== 'true') prev(); });
+btnNext.addEventListener('click', () => { if (btnNext.getAttribute('aria-disabled') !== 'true') next(); });
+btnNotes.addEventListener('click', () => setNotes(notesEl.hidden));
+btnNkey.addEventListener('click', () => setNkey(!nKeyOn));
+btnReflow.addEventListener('click', () => { reflowManual = !reflowManual; store.set('tots-reflow', reflowManual ? 'on' : 'off'); fit(); });
+
+window.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey) return;
+  const onControl = e.target.closest && e.target.closest('button, a, [tabindex]');
+  if (allMode && ['ArrowRight','ArrowLeft','PageDown','PageUp','Home','End',' '].includes(e.key)) return; // native scrolling
+  if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !onControl)) { e.preventDefault(); next(); }
+  else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+  else if (e.key === 'Escape') { railEl.classList.add('tips-off'); if (!notesEl.hidden) setNotes(false); }
+  else if (e.key === 'Home') { e.preventDefault(); go(0, 0, true); }
+  else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1, 0, true); }
+  else if ((e.key === 'n' || e.key === 'N') && nKeyOn && !e.shiftKey) { e.preventDefault(); setNotes(notesEl.hidden); }
 });
-
-// Click the right/left thirds of the stage to advance/go back, same as a
-// clicker would in presenter mode. Clicking the rail label jumps nowhere
-// special yet (reserved for future "jump to chapter" if you want it).
-document.getElementById('stage').addEventListener('click', (e) => {
-  const rect = document.getElementById('stage').getBoundingClientRect();
-  const relX = (e.clientX - rect.left) / rect.width;
-  if (relX < 0.15) {
-    // left edge = back
-    if (step > 0) { step--; render(); }
-    else if (cur > 0) go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1));
-  } else if (relX > 0.85) {
-    // right edge = forward
-    if (step < maxStep(slides[cur]) - 1) { step++; render(); }
-    else if (cur < slides.length - 1) go(cur + 1, 0);
-  }
+stage.addEventListener('click', e => {
+  if (document.body.classList.contains('reflow')) return;
+  if (e.target.closest('button, a')) return;
+  const r = stage.getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
+  if (x < .15) prev(); else if (x > .85) next();
 });
-
-// ---- 6. FIXED-CANVAS SCALING --------------------------------------------------
-// Keeps the 1280x720 stage uniformly scaled to fit the viewport, same trick
-// as the reference site's fit().
-const stage = document.getElementById('stage');
 function fit(){
-  const s = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+  const zoomed = (window.devicePixelRatio || 1) > dpr0 * 1.05;
+  const reflow = allMode || reflowManual || zoomed || innerWidth < 1000 || innerHeight < 420;
+  document.body.classList.toggle('reflow', reflow);
+  document.documentElement.classList.toggle('reflow', reflow);
+  btnReflow.setAttribute('aria-pressed', String(reflow));
+  const nh = (!notesEl.hidden && !reflow) ? Math.round(innerHeight * 0.3) : 0;
+  document.documentElement.style.setProperty('--notes-h', nh + 'px');
+  if (reflow) { stage.style.transform = 'none'; return; }
+  const s = Math.min(innerWidth / 1280, (innerHeight - nh) / 720);
   stage.style.transform = `translate(-50%,-50%) scale(${s})`;
 }
-window.addEventListener('resize', fit);
-fit();
-render();
+addEventListener('resize', () => { fit(); render(false); });
+setNkey(nKeyOn); fit(); render(false);
 </script>
 </body>
 </html>
