@@ -1,7 +1,7 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.9.9 (45 slides; slide list by chapter; Slide navigation region; skip link; Display options; images embedded; slides always complete in the zoomable layouts).
+Version 0.10 (45 slides; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the zoomable layouts).
 
 ## How to open
 
@@ -15,7 +15,7 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 - the **Previous** and **Next** buttons at the bottom right of each slide, in their own **Slide navigation** region right after the slide content (Enter or Space): their name says "Next step" or "Next slide" ("Previous step" / "Previous slide"), their description says what they will show, or why they are not available. A revealed step is announced and focus stays on the button; after a slide change, focus moves to the title of the new slide;
 - the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 45");
 - the **Slide list** button at the top of the chapter menu (chevron): lists every slide by chapter (each chapter list named, e.g. "Chapter 2, Principles and legislation: slides 10 to 16"; chapter slides announced as "chapter slide"), the current one marked; Up/Down arrows move in the list, Enter opens a slide, Esc closes it;
-- **Display options** button, always visible at the top right: opens the keyboard help, the Speaker notes button, the Display choice and the single-key shortcuts setting. **Display**, one choice among three:
+- **Display options** button, always visible at the top right: opens the keyboard help, the Speaker notes button, the Display choice, the single-key shortcuts setting and the **Animations** checkbox (short 0.15 s fades between slides and steps; unchecked = instant changes; unchecked by default when the system asks for reduced motion). **Display**, one choice among three:
   - **Presentation**: one slide at a time, scaled to fit the screen; switches to the zoomable layout by itself when the browser is zoomed in;
   - **Zoomable slides**: one slide at a time as a scrollable page, always complete (no step-by-step: Next goes to the next slide); browser zoom enlarges the text and the content reflows;
   - **All slides on one page**: every slide and step on one scrollable page, one heading per slide — the most comfortable way to read the deck with a screen reader or after the talk.
@@ -49,7 +49,7 @@ In Presentation, the 1280 × 720 slide is scaled to fit the window. When the win
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.9.9, 20 November 2026):
+How it was tested (v0.10, 20 November 2026):
 
 - axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in Presentation, in the zoomable layout and with all slides on one page: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
