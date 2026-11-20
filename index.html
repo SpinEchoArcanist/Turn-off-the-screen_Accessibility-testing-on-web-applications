@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile — slides</title>
 <!--
-  Turn Off the Screen — HTML deck v0.9 (D2-2 Build, 2026-11-19)
+  Turn Off the Screen — HTML deck v0.9.9 (D2-2c Review, 2026-11-20)
   Itecor engine, minimal Itecor theme (P23), thin icon rail (P24).
   Keys: Right / Space / PageDown = next step · Left / PageUp = previous step ·
         Home / End = first / last slide · N = speaker notes · Esc = close notes and tooltips.
@@ -368,6 +368,7 @@ body.reflow #toc{ position:fixed; left:60px; top:10px; right:10px; bottom:10px; 
 body.reflow #notes{ position:static; height:auto; }
 body.reflow #notes .nbody{ display:block; overflow:visible; }
 body.reflow table.dtable tbody th{ width:auto; }
+body.reflow [data-s]{ transition:none; transform:none; }
 body.reflow .stepnav{ position:static; justify-content:flex-end; padding:10px 20px 0; }
 /* All slides on one page: every slide and every step shown, native scrolling */
 body.all .slide{ display:flex !important; opacity:1; visibility:visible; transition:none; min-height:auto; padding:40px 20px 48px 20px; border-bottom:2px solid var(--hair); }
@@ -416,7 +417,7 @@ body.all .slide h2:focus{ outline:3px solid var(--accent1); outline-offset:4px; 
     <label><input type="checkbox" id="chk-nkey" aria-describedby="d-nkey" checked>Single-key shortcuts (N, V)</label>
     <p class="ctl-desc" id="ctl-desc" aria-hidden="true"></p>
     <span hidden id="d-slides">One slide at a time, scaled to fit the screen. When the browser is zoomed in, it switches to the zoomable layout by itself.</span>
-    <span hidden id="d-zoom">For low vision: one slide at a time as a scrollable page; browser zoom enlarges the text and the content reflows.</span>
+    <span hidden id="d-zoom">For low vision: one slide at a time as a scrollable page, always complete; browser zoom enlarges the text and the content reflows.</span>
     <span hidden id="d-all">Every slide and every step on one scrollable page; move from slide to slide with headings. Easiest with a screen reader.</span>
     <span hidden id="d-nkey">N opens or closes the speaker notes, V switches to the next display. Turn them off if single keys get in the way, for example with speech input.</span>
   </section>
@@ -573,6 +574,9 @@ const dpr0 = window.devicePixelRatio || 1;
 
 let cur = 0, step = 0;
 const maxStep = s => { let m = -1; s.querySelectorAll('[data-s]').forEach(e => m = Math.max(m, +e.dataset.s)); return m + 1; };
+// Reveal steps only in Presentation: in the zoomable layouts every slide is shown complete, one Next = one slide
+const stepped = () => !document.body.classList.contains('reflow');
+const nSteps = s => stepped() ? maxStep(s) : 0;
 // Text as a screen reader gets it: aria-hidden parts removed, sr-only parts kept
 const spoken = el => { const c = el.cloneNode(true); c.querySelectorAll('[aria-hidden="true"], .notes').forEach(x => x.remove());
   c.querySelectorAll('h3, h4, p, li, dt, dd, th, td, div, .qlbl, .qtext, .lbl').forEach(x => x.append(' '));
@@ -582,15 +586,16 @@ const titleOf = s => spoken(s.querySelector('h2'));
 function say(msg){ announceEl.textContent = ''; setTimeout(() => { announceEl.textContent = msg; }, 60); }
 function fillNotes(){
   const s = slides[cur], n = s.querySelector('.notes');
-  notesMeta.textContent = `${s.dataset.sid} · slide ${cur + 1} of ${slides.length} · ${s.dataset.min} min · step ${step + 1} of ${Math.max(1, maxStep(s))}`;
+  notesMeta.textContent = `${s.dataset.sid} · slide ${cur + 1} of ${slides.length} · ${s.dataset.min} min · step ${step + 1} of ${Math.max(1, nSteps(s))}`;
   notesBody.innerHTML = n ? n.innerHTML : '';
   if (cur < slides.length - 1) notesBody.insertAdjacentHTML('beforeend', `<p class="next">Next slide: ${titleOf(slides[cur + 1])}</p>`);
 }
 function render(announce){
   const slide = slides[cur], ch = +slide.dataset.ch;
+  if (!stepped()) step = 0;
   slides.forEach((s,i) => { s.classList.toggle('on', i === cur); s.toggleAttribute('inert', i !== cur); });
   slides.forEach((s,i) => { if (i !== cur) s.querySelectorAll('[data-s].on').forEach(e => e.classList.remove('on')); });
-  slide.querySelectorAll('[data-s]').forEach(e => e.classList.toggle('on', step >= +e.dataset.s));
+  slide.querySelectorAll('[data-s]').forEach(e => e.classList.toggle('on', !stepped() || step >= +e.dataset.s));
   document.getElementById('count-cur').textContent = cur + 1;
   document.getElementById('count-total').textContent = slides.length;
   railBtns.forEach((b,i) => { b.classList.toggle('now', i === ch); b.classList.toggle('past', i < ch);
@@ -600,10 +605,10 @@ function render(announce){
   railFill.style.height = Math.max(0, railTarget() - 12) + 'px';
   tocItems.forEach(b => { if (+b.dataset.go === cur) b.setAttribute('aria-current', 'true'); else b.removeAttribute('aria-current'); });
   if (allMode) slides.forEach(s => s.removeAttribute('inert'));
-  const atStart = cur === 0 && step === 0, atEnd = cur === slides.length - 1 && step >= maxStep(slide) - 1;
+  const atStart = cur === 0 && step === 0, atEnd = cur === slides.length - 1 && step >= nSteps(slide) - 1;
   btnPrev.setAttribute('aria-disabled', String(atStart)); btnNext.setAttribute('aria-disabled', String(atEnd));
   // Previous / Next say what they will do, and why they are not available
-  const mx = Math.max(1, maxStep(slide)), N = slides.length;
+  const mx = Math.max(1, nSteps(slide)), N = slides.length;
   const nLabel = step < mx - 1 ? 'Next step' : 'Next slide', pLabel = step > 0 ? 'Previous step' : 'Previous slide';
   const nDesc = atEnd ? 'Not available: this is the last step of the last slide.'
     : step < mx - 1 ? `Shows step ${step + 2} of ${mx} on this slide.` : `Goes to slide ${cur + 2} of ${N}: ${titleOf(slides[cur + 1])}.`;
@@ -626,16 +631,16 @@ function go(i, st, announce){ cur = Math.max(0, Math.min(slides.length - 1, i));
 function announceStep(){
   const s = slides[cur];
   const txt = [...s.querySelectorAll(`[data-s="${step}"]`)].map(spoken).join(' ');
-  say(`Added on slide ${cur + 1}, step ${step + 1} of ${Math.max(1, maxStep(s))}: ${txt}`);
+  say(`Added on slide ${cur + 1}, step ${step + 1} of ${Math.max(1, nSteps(s))}: ${txt}`);
 }
 // fromButton: the slide changed with the Previous / Next button -> focus goes to the new slide title (h2), the position is announced
 function focusHeading(i){ const h = slides[i].querySelector('h2'); h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); }
-function next(fromButton){ if (step < maxStep(slides[cur]) - 1) { step++; render(false); announceStep(); }
+function next(fromButton){ if (step < nSteps(slides[cur]) - 1) { step++; render(false); announceStep(); }
   else if (cur < slides.length - 1) { go(cur + 1, 0, fromButton ? 'pos' : true); if (fromButton) focusHeading(cur); }
   else say(`End of the deck: slide ${cur + 1} of ${slides.length}.`); }
-function prev(fromButton){ if (step > 0) { step--; render(false); say(`Removed the last item on slide ${cur + 1}: back to step ${step + 1} of ${Math.max(1, maxStep(slides[cur]))}.`); }
+function prev(fromButton){ if (step > 0) { step--; render(false); say(`Removed the last item on slide ${cur + 1}: back to step ${step + 1} of ${Math.max(1, nSteps(slides[cur]))}.`); }
   else if (cur === 0) say('Start of the deck: slide 1.');
-  else { go(cur - 1, Math.max(0, maxStep(slides[cur - 1]) - 1), fromButton ? 'pos' : true); if (fromButton) focusHeading(cur); } }
+  else { go(cur - 1, Math.max(0, nSteps(slides[cur - 1]) - 1), fromButton ? 'pos' : true); if (fromButton) focusHeading(cur); } }
 
 function setNotes(open){
   notesEl.hidden = !open;
@@ -670,7 +675,9 @@ viewRadios.forEach(r => r.addEventListener('change', () => { if (r.checked) setV
 if (reflowManual) viewRadios.forEach(r => r.checked = r.value === 'zoom');
 // visible description of the focused control (screen readers get the same text through aria-describedby)
 document.getElementById('controls').addEventListener('focusin', e => {
-  const id = e.target.getAttribute('aria-describedby'); ctlDesc.textContent = id ? document.getElementById(id).textContent : '';
+  const id = e.target.getAttribute('aria-describedby');
+  // visible hint for sighted keyboard users (screen readers announce radio groups themselves; this line is aria-hidden)
+  ctlDesc.textContent = (id ? document.getElementById(id).textContent : '') + (e.target.type === 'radio' ? ' Use the arrow keys to change the display.' : '');
 });
 btnPrev.addEventListener('click', () => { if (btnPrev.getAttribute('aria-disabled') !== 'true') prev(true); });
 btnNext.addEventListener('click', () => { if (btnNext.getAttribute('aria-disabled') !== 'true') next(true); });
