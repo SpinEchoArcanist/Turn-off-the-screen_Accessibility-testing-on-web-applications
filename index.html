@@ -11,7 +11,7 @@
         Home / End = first / last slide · N = speaker notes · Esc = close notes and tooltips.
   Zoom (SC 1.4.4): the fixed 1280 × 720 stage is scaled to the window for projection; below 1000 CSS px
   of width (e.g. 200 % zoom on a 1920 px screen), when the zoom level rises after loading, or on request
-  ("Reading view"), the deck switches to a scrollable reflow layout in CSS pixels that browser zoom enlarges.
+  ("Zoomable slides" in the Display radio group), the deck switches to a scrollable reflow layout in CSS pixels that browser zoom enlarges.
 -->
 <style>
 :root{
@@ -38,8 +38,14 @@ body{ font-family:Arial, Helvetica, sans-serif; color:var(--dark2); }
   transform:translateY(-200%); }
 #controls:focus-within{ transform:none; }
 #controls button{ font:700 14px Arial, sans-serif; color:var(--dark2); background:#fff; border:2px solid #fff; padding:6px 12px; cursor:pointer; }
-#controls .ctl-hint{ align-self:center; max-width:420px; font-size:13px; line-height:1.35; color:#fff; padding:0 6px; }
-#controls button[aria-pressed="true"]{ background:#FFB38A; border-color:#FFB38A; }
+#controls{ flex-wrap:wrap; align-items:center; max-width:calc(100vw - 16px); }
+#controls fieldset{ display:flex; align-items:center; gap:4px; border:none; margin:0; padding:0 4px; }
+#controls legend{ float:left; margin-right:6px; font:700 13px Arial, sans-serif; color:#fff; }
+#controls label{ display:flex; align-items:center; gap:10px; padding:6px 10px; font:700 14px Arial, sans-serif; color:var(--dark2); background:#fff; cursor:pointer; }
+#controls input{ width:18px; height:18px; margin:0; accent-color:#C44100; cursor:pointer; }
+#controls input:focus-visible{ outline:3px solid var(--dark2); outline-offset:2px; }
+#controls label:has(input:focus-visible){ box-shadow:0 0 0 3px #fff; }
+#controls .ctl-desc{ flex-basis:100%; font-size:13px; line-height:1.35; color:#fff; padding:2px 4px 0; }
 #controls button:focus-visible{ outline:3px solid #fff; outline-offset:2px; box-shadow:0 0 0 5px var(--dark2); }
 
 /* ---------- Stage (template engine) ---------- */
@@ -297,7 +303,7 @@ ol.chmap .name{ display:block; font-size:28px; font-weight:700; color:var(--dark
 #notes .next{ color:#B8BEC4; margin-top:8px; }
 .slide .notes{ display:none; }
 
-/* ---------- Reading view (reflow): browser zoom enlarges the content (SC 1.4.4) ---------- */
+/* ---------- Zoomable layout (reflow): browser zoom enlarges the content (SC 1.4.4) ---------- */
 body.reflow, html.reflow{ overflow:auto; background:#fff; height:auto; }
 body.reflow #stage{ position:static; transform:none !important; width:auto; height:auto; box-shadow:none; overflow:visible; padding-left:64px; }
 body.reflow .slide{ display:none; position:relative; top:auto; right:auto; bottom:auto; left:auto; opacity:1; transition:none; }
@@ -320,7 +326,7 @@ body.reflow dl.reflist dd{ border-top:none; }
 body.reflow .qpanel, body.reflow .npanel{ max-width:none; }
 body.reflow .photo-body{ position:static; padding:40px 0 0; }
 body.reflow .open-num{ position:static; transform:none; font-size:96px; margin-top:20px; }
-body.reflow .cover .logo-top{ position:static; display:block; margin-bottom:24px; }
+body.reflow .cover .logo-top{ position:static; display:block; align-self:flex-start; width:auto; height:40px; margin-bottom:24px; }
 body.reflow .cover-title{ font-size:44px; }
 body.reflow .open-title{ font-size:40px; }
 body.reflow .statement span{ font-size:32px; }
@@ -361,11 +367,19 @@ body.all .slide h2:focus{ outline:3px solid var(--accent1); outline-offset:4px; 
 </defs></svg>
 
 <section id="controls" aria-label="Deck controls">
-  <button type="button" id="btn-notes" aria-pressed="false">Speaker notes (N)</button>
-  <button type="button" id="btn-reflow" aria-pressed="false">Reading view</button>
-  <button type="button" id="btn-all" aria-pressed="false">All slides on one page</button>
-  <button type="button" id="btn-nkey" aria-pressed="true">N shortcut on</button>
-  <p class="ctl-hint">With a screen reader: use the Previous and Next buttons at the bottom of the slide, or All slides on one page.</p>
+  <button type="button" id="btn-notes" aria-expanded="false" aria-controls="notes" aria-keyshortcuts="N">Speaker notes</button>
+  <fieldset>
+    <legend>Display</legend>
+    <label><input type="radio" name="view" value="slides" aria-describedby="d-slides" checked>Presentation</label>
+    <label><input type="radio" name="view" value="zoom" aria-describedby="d-zoom">Zoomable slides</label>
+    <label><input type="radio" name="view" value="all" aria-describedby="d-all">All slides on one page</label>
+  </fieldset>
+  <label><input type="checkbox" id="chk-nkey" aria-describedby="d-nkey" checked>N key opens the notes</label>
+  <p class="ctl-desc" id="ctl-desc" aria-hidden="true"></p>
+  <span hidden id="d-slides">One slide at a time, scaled to fit the screen. When the browser is zoomed in, it switches to the zoomable layout by itself.</span>
+  <span hidden id="d-zoom">One slide at a time as a scrollable page: browser zoom enlarges the text and the content reflows.</span>
+  <span hidden id="d-all">Every slide and every step on one scrollable page; move from slide to slide with headings. Easiest with a screen reader.</span>
+  <span hidden id="d-nkey">Turn it off if the single N key gets in the way, for example with speech input. The Speaker notes button still works.</span>
 </section>
 
 <div id="stage">
@@ -506,13 +520,14 @@ railBtns.forEach(b => b.addEventListener('click', () => {
 }));
 
 const notesEl = document.getElementById('notes'), notesBody = document.getElementById('notes-body'), notesMeta = document.getElementById('notes-meta');
-const btnNotes = document.getElementById('btn-notes'), btnReflow = document.getElementById('btn-reflow'), btnNkey = document.getElementById('btn-nkey');
-const btnAll = document.getElementById('btn-all'), btnPrev = document.getElementById('btn-prev'), btnNext = document.getElementById('btn-next');
+const btnNotes = document.getElementById('btn-notes'), chkN = document.getElementById('chk-nkey');
+const viewRadios = [...document.querySelectorAll('#controls input[name="view"]')], ctlDesc = document.getElementById('ctl-desc');
+const btnPrev = document.getElementById('btn-prev'), btnNext = document.getElementById('btn-next');
 let allMode = false;
 const announceEl = document.getElementById('announce');
 const stage = document.getElementById('stage');
 let nKeyOn = store.get('tots-nkey') !== 'off';
-let reflowManual = store.get('tots-reflow') === 'on';
+let reflowManual = store.get('tots-view') === 'zoom';
 const dpr0 = window.devicePixelRatio || 1;
 
 let cur = 0, step = 0;
@@ -566,37 +581,48 @@ function prev(){ if (step > 0) { step--; render(false); announceEl.textContent =
 
 function setNotes(open){
   notesEl.hidden = !open;
-  btnNotes.setAttribute('aria-pressed', String(open));
+  btnNotes.setAttribute('aria-expanded', String(open));
   if (open) fillNotes();
   fit();
   announceEl.textContent = open ? 'Speaker notes shown' : 'Speaker notes hidden';
 }
 function setNkey(on){
   nKeyOn = on; store.set('tots-nkey', on ? 'on' : 'off');
-  btnNkey.setAttribute('aria-pressed', String(on));
-  btnNkey.textContent = on ? 'N shortcut on' : 'N shortcut off';
-  btnNotes.textContent = on ? 'Speaker notes (N)' : 'Speaker notes';
+  chkN.checked = on;
+  if (on) btnNotes.setAttribute('aria-keyshortcuts', 'N'); else btnNotes.removeAttribute('aria-keyshortcuts');
 }
 function focusSlide(i){ const h = slides[i].querySelector('h2'); h.setAttribute('tabindex', '-1'); h.focus(); }
 function setAll(on){
   allMode = on; document.body.classList.toggle('all', on);
-  btnAll.setAttribute('aria-pressed', String(on));
   // one page: no region per slide (44 landmarks), headings carry the navigation
   slides.forEach(s => { if (on) { s.dataset.lb = s.getAttribute('aria-labelledby'); s.removeAttribute('aria-labelledby'); }
                         else if (s.dataset.lb) s.setAttribute('aria-labelledby', s.dataset.lb); });
   fit(); render(false);
-  if (on) { announceEl.textContent = 'All 44 slides on one page. Use headings to move from slide to slide.'; focusSlide(cur); }
-  else { announceEl.textContent = `Slide by slide. Slide ${cur + 1} of ${slides.length}: ${titleOf(slides[cur])}`; window.scrollTo(0, 0); }
+  if (on) announceEl.textContent = `All ${slides.length} slides on one page. Use headings to move from slide to slide.`;
+  else window.scrollTo(0, 0);
 }
-btnAll.addEventListener('click', () => setAll(!allMode));
+// Display: one choice among three (radio group); the state is the checked radio, never a computed layout
+function setView(mode){
+  if ((mode === 'all') !== allMode) setAll(mode === 'all');
+  reflowManual = mode === 'zoom'; store.set('tots-view', mode === 'zoom' ? 'zoom' : 'slides');
+  viewRadios.forEach(r => r.checked = r.value === mode);
+  fit(); render(false);
+  if (mode !== 'all') announceEl.textContent = (mode === 'zoom' ? 'Zoomable slides. ' : 'Presentation. ') + `Slide ${cur + 1} of ${slides.length}: ${titleOf(slides[cur])}`;
+}
+viewRadios.forEach(r => r.addEventListener('change', () => { if (r.checked) setView(r.value); }));
+if (reflowManual) viewRadios.forEach(r => r.checked = r.value === 'zoom');
+// visible description of the focused control (screen readers get the same text through aria-describedby)
+document.getElementById('controls').addEventListener('focusin', e => {
+  const id = e.target.getAttribute('aria-describedby'); ctlDesc.textContent = id ? document.getElementById(id).textContent : '';
+});
 btnPrev.addEventListener('click', () => { if (btnPrev.getAttribute('aria-disabled') !== 'true') prev(); });
 btnNext.addEventListener('click', () => { if (btnNext.getAttribute('aria-disabled') !== 'true') next(); });
 btnNotes.addEventListener('click', () => setNotes(notesEl.hidden));
-btnNkey.addEventListener('click', () => setNkey(!nKeyOn));
-btnReflow.addEventListener('click', () => { reflowManual = !reflowManual; store.set('tots-reflow', reflowManual ? 'on' : 'off'); fit(); });
+chkN.addEventListener('change', () => setNkey(chkN.checked));
 
 window.addEventListener('keydown', e => {
   if (e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.target.closest && e.target.closest('input, label') && ['ArrowRight','ArrowLeft','ArrowUp','ArrowDown',' ','Home','End'].includes(e.key)) return; // native radio / checkbox keys
   const onControl = e.target.closest && e.target.closest('button, a, [tabindex]');
   if (!toc.hidden && e.key === 'Escape') { e.preventDefault(); setToc(false, true); return; }
   if (e.target.closest && e.target.closest('#toc')) {   // inside the slide list: arrows move between entries, never change slide
@@ -625,7 +651,6 @@ function fit(){
   const reflow = allMode || reflowManual || zoomed || innerWidth < 1000 || innerHeight < 420;
   document.body.classList.toggle('reflow', reflow);
   document.documentElement.classList.toggle('reflow', reflow);
-  btnReflow.setAttribute('aria-pressed', String(reflow));
   const nh = (!notesEl.hidden && !reflow) ? Math.round(innerHeight * 0.3) : 0;
   document.documentElement.style.setProperty('--notes-h', nh + 'px');
   if (reflow) { stage.style.transform = 'none'; return; }

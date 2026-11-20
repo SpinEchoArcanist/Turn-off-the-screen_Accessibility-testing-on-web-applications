@@ -1,7 +1,7 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.9.4 (45 slides: Conclusion opener added; slide list; progress bar per chapter; images embedded).
+Version 0.9.5 (45 slides; slide list; progress bar per chapter; images embedded; deck controls as native radio buttons and checkbox).
 
 ## How to open
 
@@ -14,7 +14,10 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 - the **Previous** and **Next** buttons at the bottom right of each slide (Enter or Space): one step at a time; focus stays on the button and the new slide or the revealed text is announced;
 - the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 45");
 - the **Slide list** button at the top of the chapter menu (chevron): lists every slide by chapter, the current one marked; Up/Down arrows move in the list, Enter opens a slide, Esc closes it;
-- **All slides on one page** (deck controls, first Tab stops): every slide and step on one scrollable page, one heading per slide — the most comfortable way to read the deck after the talk.
+- **Display** (deck controls, first Tab stops), one choice among three:
+  - **Presentation**: one slide at a time, scaled to fit the screen; switches to the zoomable layout by itself when the browser is zoomed in;
+  - **Zoomable slides**: one slide at a time as a scrollable page; browser zoom enlarges the text and the content reflows;
+  - **All slides on one page**: every slide and step on one scrollable page, one heading per slide — the most comfortable way to read the deck with a screen reader or after the talk.
 
 ## Keyboard shortcuts (presenter)
 
@@ -25,31 +28,31 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 | Home / End | First / last slide |
 | N | Show or hide the speaker notes |
 | Esc | Close the speaker notes and the chapter tooltips |
-| Tab | First stops: deck controls (Speaker notes, Reading view, All slides on one page, N shortcut on/off), then the Slide list button and the seven chapters of the left rail, then the links of the current slide, then the Previous and Next buttons |
+| Tab | First stops: deck controls (Speaker notes button, Display radio buttons, "N key opens the notes" checkbox), then the Slide list button and the seven chapters of the left rail, then the links of the current slide, then the Previous and Next buttons |
 | Enter or Space on a chapter | Go to the first slide of that chapter |
 
 Mouse: click the left or right edge of the slide for the previous or next step; click a chapter icon in the left rail.
 
-The single-key shortcut **N** can be turned off with the "N shortcut on/off" button (first Tab stops); the "Speaker notes" button does the same job without the key.
+The single-key shortcut **N** can be turned off with the "N key opens the notes" checkbox (first Tab stops); the "Speaker notes" button does the same job without the key.
 
 ## Speaker notes
 
 Each slide carries notes (goal, what to say, audience question, transition, backup details) and its planned minutes. Press **N**: the notes panel opens at the bottom of the window and the slide is resized above it, so the notes never cover the slide. They are hidden by default.
 
-## Zoom and reading view
+## Zoom
 
-For projection, the 1280 × 720 slide is scaled to fit the window. When the window is narrower than 1000 CSS pixels (for example 200 % zoom on a 1920 px screen), when the zoom level rises after loading, or when you press the "Reading view" button, the deck switches to a scrollable reading view in CSS pixels: browser zoom then enlarges the text and the content reflows to the window width.
+In Presentation, the 1280 × 720 slide is scaled to fit the window. When the window is narrower than 1000 CSS pixels (for example 200 % zoom on a 1920 px screen) or the zoom level rises after loading, the deck switches by itself to the zoomable layout (CSS pixels): browser zoom then enlarges the text and the content reflows to the window width. Choose "Zoomable slides" to keep that layout at any size.
 
 ## Accessibility statement
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.9.4, 20 November 2026):
+How it was tested (v0.9.5, 20 November 2026):
 
-- axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in slide view and in reading view: 0 violations;
+- axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in Presentation, in the zoomable layout and with all slides on one page: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
 - contrast ratios computed with the WCAG formula for every colour pair and every text element; on photo slides, against the worst case (navy scrim over a white photo pixel);
-- browser zoom 200 % (1280 × 720 and 1920 × 1080 windows): reading view, no horizontal scrolling, no content cut off;
+- browser zoom 200 % (1280 × 720 and 1920 × 1080 windows): zoomable layout, no horizontal scrolling, no content cut off;
 - `prefers-reduced-motion`: fades and movements switched off;
 - accessibility tree as exposed by Chromium to screen readers, on every slide: landmarks (one navigation, main, footer), one `h1` and one `h2` per slide with no heading level skipped, lists exposed as lists, no symbol read out as a name (›, →, ≠, ·), reading order of every flow, card grid and two-column layout equal to the visual order;
 - HTML validation (Nu Html Checker): no errors (the 30 warnings "role list is unnecessary" are intentional: Safari/VoiceOver drops list semantics from lists styled without bullets); no console errors.
