@@ -1,7 +1,7 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.10 (45 slides; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the zoomable layouts).
+Version 0.11 (45 slides; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the zoomable layouts).
 
 ## How to open
 
@@ -49,7 +49,7 @@ In Presentation, the 1280 × 720 slide is scaled to fit the window. When the win
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.10, 20 November 2026):
+How it was tested (v0.11, 23 November 2026):
 
 - axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in Presentation, in the zoomable layout and with all slides on one page: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
