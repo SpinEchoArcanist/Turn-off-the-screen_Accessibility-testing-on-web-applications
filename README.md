@@ -1,7 +1,7 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.13 (45 slides; content revised; Chapter 4 in four parts; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the zoomable layouts).
+Version 0.16 (46 slides; new test strategy slide; content revised; Chapter 4 in four parts; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the zoomable layouts).
 
 ## How to open
 
@@ -13,7 +13,7 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 
 - a **Skip to main slide content** link (first Tab stop) and a folded **How to use this deck** section right after it;
 - the **Previous** and **Next** buttons at the bottom right of each slide, in their own **Slide navigation** region right after the slide content (Enter or Space): their name says "Next step" or "Next slide" ("Previous step" / "Previous slide"), their description says what they will show, or why they are not available. A revealed step is announced and focus stays on the button; after a slide change, focus moves to the title of the new slide;
-- the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 45");
+- the **chapter menu** on the left: each chapter tells its slide range, and the current one the position ("You are on slide 12 of 46");
 - the **Slide list** button at the top of the chapter menu (chevron): lists every slide by chapter (each chapter list named, e.g. "Chapter 2, Principles and legislation: slides 10 to 16"; chapter slides announced as "chapter slide"), the current one marked; Up/Down arrows move in the list, Enter opens a slide, Esc closes it;
 - **Display options** button, always visible at the top right: opens the keyboard help, the Speaker notes button, the Display choice, the single-key shortcuts setting and the **Animations** checkbox (short 0.15 s fades between slides and steps; unchecked = instant changes; unchecked by default when the system asks for reduced motion). **Display**, one choice among three:
   - **Presentation**: one slide at a time, scaled to fit the screen; switches to the zoomable layout by itself when the browser is zoomed in;
@@ -49,7 +49,7 @@ In Presentation, the 1280 × 720 slide is scaled to fit the window. When the win
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.13, 23 November 2026):
+How it was tested (v0.16, 23 November 2026):
 
 - axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in Presentation, in the zoomable layout and with all slides on one page: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
@@ -61,7 +61,7 @@ How it was tested (v0.13, 23 November 2026):
 
 Not yet tested: screen readers (Narrator test by the author planned before the talk).
 
-Accessibility features: landmarks `header` (deck title, how-to text, Display options, announcements), `nav` (chapters; its first item, for screen readers only, gives the position "Slide n of 45"), `main` (slides only), `nav` "Slide navigation" (Previous / Next) and `footer`, plus the speaker-notes panel; one `h1` for the deck and one `h2` per slide, `h3`/`h4` inside blocks; flows are ordered lists whose headings say "Step n of m"; cards are lists with one heading per card; term/description pairs are description lists; arrows and separators are shown but read as words; each chapter of the left menu tells its slide range, and the current one also the position ("You are on slide 12 of 44. Slides 9 to 16"); the footer reads "Slide 12 of 44"; announcements that say what happened: "Moved to slide n of 45: title", "Added on slide n, step 2 of 3: …", "Removed the last item on slide n …", "End of the deck", "Speaker notes opened", "Display changed to …"; reveal steps and hidden slides kept out of the accessibility tree until shown; chapter tooltips dismissible with Esc; no information conveyed by colour alone.
+Accessibility features: landmarks `header` (deck title, how-to text, Display options, announcements), `nav` (chapters; its first item, for screen readers only, gives the position "Slide n of 46"), `main` (slides only), `nav` "Slide navigation" (Previous / Next) and `footer`, plus the speaker-notes panel; one `h1` for the deck and one `h2` per slide, `h3`/`h4` inside blocks; flows are ordered lists whose headings say "Step n of m"; cards are lists with one heading per card; term/description pairs are description lists; arrows and separators are shown but read as words; each chapter of the left menu tells its slide range, and the current one also the position ("You are on slide 12 of 46. Slides 9 to 16"); the footer reads "Slide 12 of 46"; announcements that say what happened: "Moved to slide n of 46: title", "Added on slide n, step 2 of 3: …", "Removed the last item on slide n …", "End of the deck", "Speaker notes opened", "Display changed to …"; reveal steps and hidden slides kept out of the accessibility tree until shown; chapter tooltips dismissible with Esc; no information conveyed by colour alone.
 
 Feedback: please open an issue in this repository.
 
