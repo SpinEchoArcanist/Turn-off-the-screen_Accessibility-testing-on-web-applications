@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile — slides</title>
 <!--
-  Turn Off the Screen — HTML deck v0.25 (D2-2d Content, 2026-11-26)
-  Itecor engine, minimal Itecor theme (P23), thin icon rail (P24).
+  Turn Off the Screen — HTML deck v0.26 (D2-2d Content, 2026-11-26)
+  Itecor engine, minimal Itecor theme (P23), thin icon rail (P24); on small screens a top bar replaces the rail (v0.26).
   Keys: Right / Space / PageDown = next step · Left / PageUp = previous step ·
         Home / End = first / last slide · N = speaker notes · Esc = close notes and tooltips.
   Zoom (SC 1.4.4): the fixed 1280 × 720 stage is scaled to the window for projection; below 1000 CSS px
@@ -490,6 +490,35 @@ body.all [data-s]{ opacity:1; visibility:visible; transform:none; transition:non
 body.all .stepnav, body.all #count{ display:none; }
 body.all .slide h2:focus{ outline:3px solid var(--accent1); outline-offset:4px; }
 
+/* ---------- Small screens (phone, or 200 % zoom): a top bar replaces the chapter rail (v0.26) ----------
+   body.compact is set by fit() with the thresholds of the automatic reflow switch (width < 1000 or height < 420 CSS px).
+   Removed with display:none (no Tab stop, no screen reader swipe stop): the chapter icons and the progress fill.
+   Bar: Slide list button with its text visible (left), slide number n / N (right), Display options as an icon (its name unchanged). */
+#opt-toggle .tip{ display:none; }
+body.compact #deck-head::before{ content:""; position:fixed; top:0; left:0; right:0; height:48px; z-index:99; background:#fff; border-bottom:1px solid var(--hair); }
+html.compact{ scroll-padding-top:60px; }
+body.compact #stage{ padding-left:0; padding-top:48px; }
+body.compact #chapter-rail{ position:fixed; left:4px; top:2px; width:auto; height:44px; z-index:100; }
+body.compact #chapter-rail::before, body.compact #chapter-rail .rail-fill, body.compact #chapter-rail .rail-chapters{ display:none; }
+body.compact #chapter-rail .toc-toggle{ position:static; width:auto; height:44px; gap:8px; padding:0 10px; font:700 15px Arial, sans-serif; color:var(--dark2); }
+body.compact #chapter-rail .toc-toggle svg{ color:var(--accent1); }
+body.compact #chapter-rail .toc-toggle .sr-only{ position:static; width:auto; height:auto; overflow:visible; clip:auto; }
+body.compact #chapter-rail .toc-toggle .tip{ display:none; }
+body.compact #toc{ left:0; right:0; top:48px; bottom:0; }
+/* full-screen list and hidden skip link / how-to: no shadow over the bar */
+body.compact #toc, body.compact .skip:not(:focus), body.compact #howto:not(:focus-within):not([open]){ box-shadow:none; }
+body.compact:not(.all) #count{ display:block; position:fixed; top:2px; right:60px; bottom:auto; left:auto; height:44px; line-height:44px; z-index:100; font-size:15px; }
+body.compact #opt-toggle{ top:2px; right:4px; width:44px; height:44px; padding:0; justify-content:center; color:var(--label); background:#fff; text-transform:none; letter-spacing:0; }
+body.compact #opt-toggle svg{ width:20px; height:20px; }
+body.compact #opt-toggle .opt-label{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+body.compact #opt-toggle:focus-visible{ outline-color:var(--dark2); box-shadow:0 0 0 5px #fff; }
+body.compact #opt-toggle .tip{ display:block; position:absolute; top:48px; right:0; white-space:nowrap; background:var(--dark2); color:#fff; font:700 13px Arial, sans-serif;
+  letter-spacing:0; text-transform:none; padding:5px 10px; visibility:hidden; opacity:0; transition:opacity .15s ease; pointer-events:none; }
+@media (hover:hover){ body.compact #opt-toggle:hover .tip{ visibility:visible; opacity:1; } }
+body.compact #opt-toggle:focus-visible .tip{ visibility:visible; opacity:1; }
+body.compact #opt-toggle[aria-expanded="true"] .tip, #deck-head.tips-off #opt-toggle .tip{ visibility:hidden !important; }
+body.compact #controls{ top:48px; max-height:calc(100vh - 48px); }
+
 @media (prefers-reduced-motion: reduce){
   .slide, .slide.on, [data-s], [data-s].on, #chapter-rail .rail-fill, #chapter-rail .tip{ transition:none !important; }
   [data-s]{ transform:none !important; }
@@ -518,9 +547,9 @@ body.all .slide h2:focus{ outline:3px solid var(--accent1); outline-offset:4px; 
   <a class="skip" id="skip" href="#deck">Skip to main slide content</a>
   <h1 class="sr-only">Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile — slides</h1>
   <details id="howto"><summary>How to use this deck</summary>
-    <p>The Previous and Next buttons at the bottom right of each slide move one step or one slide at a time; after a step, focus stays on the button and what changed is read, and also written right after the buttons, followed by a link back to the slide content; after a slide change, focus goes to the title of the new slide. The chapter menu on the left opens a chapter, and its Slide list button lists every slide. The Display options button at the top right opens the layouts, the speaker notes and the keyboard keys. With a screen reader, two layouts help: Complete slides shows one complete slide at a time, with Previous and Next; All slides on one page lets you jump from slide title to slide title.</p>
+    <p>The Previous and Next buttons at the bottom right of each slide move one step or one slide at a time; after a step, focus stays on the button and what changed is read, and also written right after the buttons, followed by a link back to the slide content; after a slide change, focus goes to the title of the new slide. The chapter menu on the left opens a chapter, and its Slide list button lists every slide. On a small screen, a bar at the top replaces the chapter menu: the Slide list button on the left, then the slide number, then the Display options button as an icon; the chapter names in the slide list open each chapter. The Display options button at the top right opens the layouts, the speaker notes and the keyboard keys. With a screen reader, two layouts help: Complete slides shows one complete slide at a time, with Previous and Next; All slides on one page lets you jump from slide title to slide title.</p>
   </details>
-  <button type="button" id="opt-toggle" aria-expanded="false" aria-controls="controls"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg>Display options</button>
+  <button type="button" id="opt-toggle" aria-expanded="false" aria-controls="controls"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24"><path d="M10 5H3"/><path d="M12 19H3"/><path d="M14 3v4"/><path d="M16 17v4"/><path d="M21 12h-9"/><path d="M21 19h-5"/><path d="M21 5h-7"/><path d="M8 10v4"/><path d="M8 12H3"/></svg><span class="opt-label">Display options</span><span class="tip" aria-hidden="true">Display options</span></button>
   <section id="controls" aria-label="Display options" hidden>
     <p class="ctl-help">With a screen reader, use the Previous and Next buttons at the bottom right of the slide. Keys for the presenter: Right Arrow or Page Down, next step; Left Arrow or Page Up, previous step; Home and End, first and last slide; N, speaker notes; V, next display; Escape, close.</p>
     <button type="button" id="btn-notes" aria-expanded="false" aria-controls="notes" aria-keyshortcuts="N">Speaker notes</button>
@@ -835,6 +864,8 @@ chkN.addEventListener('change', () => setNkey(chkN.checked));
 const optBtn = document.getElementById('opt-toggle'), ctlPanel = document.getElementById('controls'), headEl = document.getElementById('deck-head');
 function setOpts(open, focusBack){ ctlPanel.hidden = !open; optBtn.setAttribute('aria-expanded', String(open)); if (!open && focusBack) optBtn.focus(); }
 optBtn.addEventListener('click', () => setOpts(ctlPanel.hidden, false));
+headEl.addEventListener('mouseover', () => headEl.classList.remove('tips-off'));
+headEl.addEventListener('focusin', () => headEl.classList.remove('tips-off'));
 headEl.addEventListener('focusout', e => { if (e.relatedTarget && !headEl.contains(e.relatedTarget)) setOpts(false, false); });
 document.addEventListener('pointerdown', e => { if (!ctlPanel.hidden && !headEl.contains(e.target)) setOpts(false, false); });
 const VIEWS = ['slides', 'zoom', 'all'];
@@ -857,7 +888,7 @@ window.addEventListener('keydown', e => {
   if (allMode && ['ArrowRight','ArrowLeft','PageDown','PageUp','Home','End',' '].includes(e.key)) return; // native scrolling
   if (e.key === 'ArrowRight' || e.key === 'PageDown' || (e.key === ' ' && !onControl)) { e.preventDefault(); next(); }
   else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
-  else if (e.key === 'Escape') { railEl.classList.add('tips-off'); if (!notesEl.hidden) setNotes(false); }
+  else if (e.key === 'Escape') { railEl.classList.add('tips-off'); headEl.classList.add('tips-off'); if (!notesEl.hidden) setNotes(false); }
   else if (e.key === 'Home') { e.preventDefault(); go(0, 0, true); }
   else if (e.key === 'End') { e.preventDefault(); go(slides.length - 1, 0, true); }
   else if ((e.key === 'n' || e.key === 'N') && nKeyOn && !e.shiftKey) { e.preventDefault(); setNotes(notesEl.hidden); }
@@ -874,6 +905,10 @@ function fit(){
   const reflow = allMode || reflowManual || zoomed || innerWidth < 1000 || innerHeight < 420;
   document.body.classList.toggle('reflow', reflow);
   document.documentElement.classList.toggle('reflow', reflow);
+  // small screen: top bar instead of the rail; the region then holds only the slide list
+  const compact = reflow && (innerWidth < 1000 || innerHeight < 420);
+  document.body.classList.toggle('compact', compact); document.documentElement.classList.toggle('compact', compact);
+  railEl.setAttribute('aria-label', compact ? 'Slide list' : 'Progress bar and slide list');
   const nh = (!notesEl.hidden && !reflow) ? Math.round(innerHeight * 0.3) : 0;
   document.documentElement.style.setProperty('--notes-h', nh + 'px');
   if (reflow) { stage.style.transform = 'none'; stage.style.left = stage.style.top = ''; return; }
