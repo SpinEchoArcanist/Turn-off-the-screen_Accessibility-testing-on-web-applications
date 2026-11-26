@@ -1,7 +1,7 @@
 # Turn Off the Screen: What I've Learned About Accessibility Testing on Web and Mobile
 
 HTML slide deck for the itecor Geneva BrownBag of 27 November 2026 — Simone Coppo.
-Version 0.26 (46 slides; on phones and small screens a top bar replaces the chapter menu: Slide list button, slide number, Display options as an icon; on-slide text reviewed for clarity and consistency; callouts redesigned: key messages centred at the bottom of the slide, audience questions as the only dark cards, explanations on a light background; appendix names linked to the guides in this repository; screen reader fixes after a JAWS review by a blind user; new test strategy slide; content revised; Chapter 4 in four parts; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the Complete slides layout).
+Version 0.27 (46 slides; on phones Previous and Next always on screen; one example per conformance level; on phones and small screens a top bar replaces the chapter menu: Slide list button, slide number, Display options as an icon; on-slide text reviewed for clarity and consistency; callouts redesigned: key messages centred at the bottom of the slide, audience questions as the only dark cards, explanations on a light background; appendix names linked to the guides in this repository; screen reader fixes after a JAWS review by a blind user; new test strategy slide; content revised; Chapter 4 in four parts; slide list by chapter; Slide navigation region; skip link; Display options with an Animations switch; images embedded; slides always complete in the Complete slides layout).
 
 ## How to open
 
@@ -19,7 +19,7 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
   - **Presentation**: one slide at a time, scaled to fit the screen; switches to the zoomable layout by itself when the browser is zoomed in;
   - **Complete slides**: one slide at a time, always complete (no step-by-step reveal: Next goes to the next slide), as a scrollable page that browser zoom enlarges; good for low vision and for screen readers;
   - **All slides on one page**: every slide and step on one scrollable page, one heading per slide — the most comfortable way to read the deck with a screen reader or after the talk.
-- on a **small screen** (phone, or 200 % zoom), there is no chapter menu: a bar at the top holds the **Slide list** button (its name shown as text), the slide number "12 / 46" and the **Display options** button (an icon, same name for screen readers, tooltip on hover and keyboard focus). The chapter names in the slide list open each chapter; the region is then named "Slide list".
+- on a **small screen** (phone, or 200 % zoom), there is no chapter menu: a bar at the top holds the **Slide list** button (its name shown as text), the slide number "12 / 46" and the **Display options** button (an icon, same name for screen readers, tooltip on hover and keyboard focus). The chapter names in the slide list open each chapter; the region is then named "Slide list". **Previous** and **Next** stay on screen: at the bottom, with their words, or as icons beside the slide number when the phone is held sideways; same names and same focus behaviour as on a computer.
 
 ## Keyboard shortcuts (presenter)
 
@@ -30,11 +30,11 @@ Screen readers (NVDA, JAWS, Narrator scan mode, VoiceOver) keep the arrow keys a
 | Home / End | First / last slide |
 | N | Show or hide the speaker notes |
 | V | Next display: Presentation → Complete slides → All slides on one page |
-| Esc | Close the open panel (Display options, slide list, speaker notes) and the chapter tooltips |
+| Esc | Close the open panel (Display options, slide list, speaker notes) and the tooltips |
 | Tab | First stops: Skip to main slide content, How to use this deck (folded), Display options, then the Slide list button and the seven chapters of the left rail (on a small screen: the Slide list button only), then the links of the current slide, then the Previous and Next buttons |
 | Enter or Space on a chapter | Go to the first slide of that chapter |
 
-Mouse: click the left or right edge of the slide for the previous or next step; click a chapter icon in the left rail. On a small screen, tap Slide list at the top left, then a slide or a chapter name.
+Mouse: click the left or right edge of the slide for the previous or next step; click a chapter icon in the left rail. On a small screen, tap Next or Previous (at the bottom, or beside the slide number when the phone is held sideways), or tap Slide list at the top left, then a slide or a chapter name.
 
 The single-key shortcuts **N** and **V** can be turned off with the "Single-key shortcuts (N, V)" checkbox in Display options; the Speaker notes button and the Display choice do the same jobs without the keys.
 
@@ -48,19 +48,21 @@ In Presentation, the 1280 × 720 slide is scaled to fit the window. When the win
 
 ## Phones and small screens
 
-Below 1000 CSS pixels wide, or below 420 pixels high (a phone held sideways), the deck uses the zoomable layout and a bar at the top replaces the chapter menu on the left: the **Slide list** button on the left, the slide number "n / 46" on the right, then **Display options** as an icon. The slide gets the full width of the screen. The slide list opens over the whole screen below the bar; tap Slide list again to close it. With "Complete slides" on a wide screen, the chapter menu stays.
+Below 1000 CSS pixels wide, or below 420 pixels high (a phone held sideways), the deck uses the zoomable layout and a bar at the top replaces the chapter menu on the left: the **Slide list** button on the left, the slide number "n / 46" on the right, then **Display options** as an icon. The slide gets the full width of the screen. The slide list opens over the whole screen below the bar; tap Slide list again to close it.
+
+**Previous** and **Next** are always on screen, so there is no need to scroll to the end of a slide: held upright, in a bar at the bottom (two halves, with the words Previous and Next); held sideways, as icons either side of the slide number in the top bar. After a slide change the page goes back to the top and the focus moves to the new slide title. There is no swipe gesture on purpose: with VoiceOver or TalkBack on, swipes belong to the screen reader. With "Complete slides" on a wide screen, the chapter menu stays.
 
 ## Accessibility statement
 
 This deck targets **WCAG 2.2 Level AA** (no AAA claim).
 
-How it was tested (v0.26, 26 November 2026):
+How it was tested (v0.27, 26 November 2026):
 
 - axe-core 4 (WCAG 2.0/2.1/2.2 A and AA rules + best practices) on every slide and every reveal step, in Presentation, in the zoomable layout and with all slides on one page: 0 violations;
 - keyboard only: the full path through every step of every slide, the deck controls, the chapter rail and the links; visible focus on every control;
 - contrast ratios computed with the WCAG formula for every colour pair and every text element; on photo slides, against the worst case (navy scrim over a white photo pixel);
 - browser zoom 200 % (1280 × 720 and 1920 × 1080 windows): zoomable layout, no horizontal scrolling, no content cut off;
-- small screens (320 × 568, 390 × 844, 844 × 390 and 200 % zoom): top bar instead of the chapter menu, no horizontal scrolling, nothing under the bar, buttons at least 44 × 44 px, a focused element never hidden by the bar, axe-core 0 violations on every slide; the projector layout pixel-identical to v0.25;
+- small screens (320 × 568, 390 × 844, 844 × 390 and 200 % zoom): top bar instead of the chapter menu, no horizontal scrolling, nothing under the bar, buttons at least 44 × 44 px, Previous and Next visible on every slide without scrolling, the end of each slide never under the bottom bar, a focused element never hidden by a bar, axe-core 0 violations on every slide; the projector layout pixel-identical to the previous version apart from the slides whose content changed;
 - `prefers-reduced-motion`: fades and movements switched off;
 - accessibility tree as exposed by Chromium to screen readers, on every slide: landmarks (one navigation, main, footer), one `h1` and one `h2` per slide with no heading level skipped, lists exposed as lists, no symbol read out as a name (›, →, ≠, ·), reading order of every flow, card grid and two-column layout equal to the visual order;
 - HTML validation (Nu Html Checker): no errors (the 30 warnings "role list is unnecessary" are intentional: Safari/VoiceOver drops list semantics from lists styled without bullets); no console errors.
