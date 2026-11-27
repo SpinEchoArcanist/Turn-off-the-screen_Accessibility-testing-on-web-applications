@@ -16,7 +16,7 @@ Plutôt qu'une reformulation exhaustive du standard WCAG, ce document adopte une
 
 Cette checklist est conçue pour guider la validation de l'accessibilité étape par étape, en décomposant les exigences des WCAG 2.2 par grande fonctionnalité de l'application (navigation, formulaires, composants interactifs, présentation visuelle, comportement responsive, etc.).
 
-Chaque section vise un objectif clair (par ex. *« Assurer une navigation fluide et logique »*) et liste les vérifications à effectuer, chacune renvoyant directement au critère WCAG correspondant.
+Chaque section vise un objectif clair (par ex. *« Assurer une navigation fluide et logique »*) et liste les vérifications à effectuer, chacune renvoyant directement au critère WCAG correspondant. Les vérifications marquées **bonne pratique** ou **APG** (ARIA Authoring Practices Guide) sont des conventions recommandées, et non des exigences WCAG.
 
 Pour chaque domaine fonctionnel, vous trouverez :
 
@@ -31,22 +31,23 @@ Pour chaque domaine fonctionnel, vous trouverez :
 **Objectif :** Assurer une navigation fluide et logique dans toute l'application, avec un indicateur de focus toujours clairement visible — y compris sur les composants personnalisés.
 
 - La navigation au clavier (Tab, Maj+Tab, flèches) fonctionne correctement **(WCAG 2.1.1, 2.1.2 - A)**
-- L'ordre de tabulation suit une séquence logique (de haut en bas, de gauche à droite) **(WCAG 2.4.3 - A)**
+- L'ordre de tabulation suit une séquence logique qui préserve le sens et l'utilisation (en général de haut en bas, de gauche à droite) **(WCAG 2.4.3 - A)**
 - Les zones de navigation principales sont identifiables (en-tête, navigation, contenu principal, pied de page) **(WCAG 1.3.1 - A)**
-- Des liens d'évitement (« Aller au contenu principal ») sont présents et fonctionnels **(WCAG 2.4.1 - A)**
-- Plusieurs moyens permettent de trouver une page dans un ensemble de pages (par ex. recherche, plan du site ou menu de navigation) **(WCAG 2.4.5 - AA)**
+- Les blocs de contenu répétés sur plusieurs pages peuvent être contournés : un lien « Aller au contenu principal », ou des repères et des titres **(WCAG 2.4.1 - A)**
+- Plusieurs moyens permettent de trouver une page dans un ensemble de pages (par ex. recherche, plan du site ou menu de navigation), sauf pour les pages qui sont une étape ou le résultat d'un processus **(WCAG 2.4.5 - AA)**
 - Il n'existe aucun piège au clavier (il est possible de sortir de chaque zone) **(WCAG 2.1.2 - A)**
 - Les raccourcis clavier composés d'une seule touche caractère (lettre, chiffre ou ponctuation) peuvent être désactivés ou reconfigurés, ou ne sont actifs que lorsque le composant a le focus **(WCAG 2.1.4 - A)**
 - La navigation ne dépend pas uniquement de la souris **(WCAG 2.1.1 - A)**
 - Un indicateur de focus visible est présent sur chaque élément focalisable, y compris les composants développés sur mesure **(WCAG 2.4.7 - AA)**
+- L'indicateur de focus n'est jamais supprimé par le CSS (par ex. `outline: none` sans remplacement visible) **(WCAG 2.4.7 - AA)**
 - L'élément qui a le focus n'est jamais entièrement masqué par un autre contenu, comme un en-tête fixe, un bandeau de cookies ou un widget de chat **(WCAG 2.4.11 - AA)**
-- L'indicateur de focus a un contraste suffisant pour être clairement perceptible **(WCAG 1.4.11 - AA)** — voir le thème 13 (Contrastes visuels) pour l'exigence chiffrée
+- L'indicateur de focus a un contraste suffisant par rapport à l'arrière-plan adjacent pour être clairement perceptible **(WCAG 1.4.11 - AA)** — voir le thème 13 (Contrastes visuels) pour l'exigence chiffrée
 
 **Critères d'acceptation :**
 
 - ✅ 100 % des zones sont accessibles au clavier
 - ✅ L'ordre de tabulation ne présente aucune incohérence
-- ✅ Les liens d'évitement fonctionnent sur chaque page
+- ✅ Le mécanisme de contournement (lien d'évitement, ou repères et titres) fonctionne sur chaque page
 - ✅ 100 % des éléments focalisables affichent un indicateur de focus visible
 - ✅ L'indicateur de focus a un contraste suffisant
 - ✅ Aucun composant ne supprime le focus ni ne masque entièrement l'élément qui a le focus
@@ -57,13 +58,13 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 **Objectif :** S'assurer que chaque élément interactif est accessible et compréhensible.
 
-- Tous les boutons sont activables au clavier (Entrée ou Espace) **(WCAG 2.1.1 - A)**
+- Tous les boutons sont activables au clavier (les boutons natifs réagissent à Entrée et à Espace) **(WCAG 2.1.1 - A)**
 - Les boutons ont des libellés explicites et descriptifs **(WCAG 4.1.2 - A, 2.4.6 - AA)**
 - Lorsqu'un composant a un libellé texte visible, son nom accessible inclut ce texte visible **(WCAG 2.5.3 - A)**
-- Les liens sont clairement identifiables et leur destination est compréhensible **(WCAG 2.4.4 - A, 2.4.9 - AAA)**
+- La fonction de chaque lien peut être déterminée à partir de son texte ou de son contexte **(WCAG 2.4.4 - A)**, idéalement à partir du seul texte du lien **(WCAG 2.4.9 - AAA)**
 - Le texte des liens est explicite (éviter « cliquez ici », « en savoir plus » sans contexte) **(WCAG 2.4.4 - A)**
 - Les éléments cliquables ont un rôle ARIA approprié uniquement lorsqu'il n'est pas déjà implicite (par ex. `<a>`, `<button>`) **(WCAG 4.1.2 - A)**
-- Les menus déroulants sont navigables au clavier (flèches, Entrée, Échap) **(WCAG 2.1.1 - A)**
+- Les menus déroulants sont utilisables au clavier **(WCAG 2.1.1 - A)** ; les touches attendues (flèches, Entrée, Échap) suivent les modèles de menu de l'APG
 - Les éléments composés uniquement d'une icône ont des alternatives textuelles (`aria-label` ou texte masqué visuellement) **(WCAG 1.1.1, 4.1.2 - A)**
 - Les boutons bascules indiquent clairement leur état (activé/désactivé) **(WCAG 4.1.2 - A)**
 - Les éléments désactivés sont identifiables et annoncés comme tels **(WCAG 4.1.2 - A)**
@@ -80,22 +81,22 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 **Objectif :** Permettre une saisie d'informations claire et sans erreur.
 
-- Tous les champs de formulaire ont une étiquette (`<label for='field_id'>`, ou `aria-labelledby` / `aria-label` lorsqu'un `<label>` visible ne peut pas être utilisé) **(WCAG 3.3.2 - A)**, associée au champ par le code **(WCAG 1.3.1, 4.1.2 - A)**
-- Les instructions de saisie sont annoncées avant ou pendant la saisie **(WCAG 3.3.2 - A)**
-- Les champs obligatoires sont clairement identifiés (visuellement et via `required` ou `aria-required`) **(WCAG 3.3.2 - A)**
-- Les formats attendus sont communiqués (par ex. JJ/MM/AAAA, +41 XX XXX XX XX) **(WCAG 3.3.2 - A)**
+- Tous les champs de formulaire ont une étiquette ou des instructions visibles **(WCAG 3.3.2 - A)**, associées au champ par le code (`<label for='field_id'>`, ou `aria-labelledby`) **(WCAG 1.3.1, 4.1.2 - A)**. Un `aria-label` donne au champ un nom accessible **(WCAG 4.1.2 - A)**, mais il n'est pas visible : à lui seul, il ne satisfait pas le critère 3.3.2
+- Les instructions de saisie sont visibles, et annoncées avant ou pendant la saisie **(WCAG 3.3.2 - A)**
+- Les champs obligatoires sont clairement identifiés, visuellement et dans le code (`required` ou `aria-required`) **(WCAG 3.3.2, 1.3.1 - A)**
+- Les formats attendus sont communiqués (par ex. JJ.MM.AAAA, +41 XX XXX XX XX) **(WCAG 3.3.2 - A)**
 - Les listes déroulantes (`<select>`) sont accessibles et leurs options lisibles **(WCAG 4.1.2 - A)**
 - Les cases à cocher et les boutons radio ont des étiquettes associées **(WCAG 3.3.2, 1.3.1 - A)**
 - Les groupes de champs sont regroupés logiquement (`<fieldset>` avec `<legend>`) **(WCAG 1.3.1 - A)**
 - Les champs qui recueillent des informations sur l'utilisateur (nom, e-mail, adresse, téléphone…) exposent leur finalité avec l'attribut `autocomplete` **(WCAG 1.3.5 - AA)**
-- Une information déjà saisie dans le même processus est pré-remplie ou proposée en sélection, au lieu d'être redemandée **(WCAG 3.3.7 - A)**
+- Une information déjà saisie dans le même processus est pré-remplie ou proposée en sélection, au lieu d'être redemandée — sauf si la ressaisie est essentielle, exigée pour la sécurité, ou si l'information n'est plus valide **(WCAG 3.3.7 - A)**
 - Les zones de recherche sont identifiables (élément `<search>` ou repère `role="search"`) **(WCAG 1.3.1 - A)**
-- La validation côté client est accessible **(WCAG 3.3.1 - A)**
+- Les erreurs détectées par la validation côté client sont identifiées et décrites sous forme de texte **(WCAG 3.3.1 - A)**
 
 **Critères d'acceptation :**
 
 - ✅ Tous les champs sont identifiables et remplissables au clavier
-- ✅ Les instructions et contraintes sont annoncées avant la saisie
+- ✅ Les instructions et contraintes sont visibles et annoncées avant la saisie
 - ✅ Aucun champ obligatoire n'est dépourvu d'indication
 
 ---
@@ -104,20 +105,20 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 **Objectif :** Informer clairement l'utilisateur des actions réalisées et des éventuelles erreurs.
 
-- Les messages d'erreur sont lisibles et associés aux champs concernés **(WCAG 3.3.1 - A, 3.3.3 - AA)**
-- Les erreurs sont annoncées via des régions live (`role="alert"`) **(WCAG 4.1.3 - AA)**
-- Les messages de succès sont annoncés automatiquement **(WCAG 4.1.3 - AA)**
+- Les erreurs de saisie détectées automatiquement identifient le champ en erreur et décrivent l'erreur sous forme de texte, et pas seulement par une couleur ou une icône **(WCAG 3.3.1 - A)**
+- Les messages d'erreur qui apparaissent sans déplacer le focus sont annoncés via des régions live (`role="alert"`) **(WCAG 4.1.3 - AA)**. Lorsque le focus est déplacé sur le message d'erreur ou sur un récapitulatif des erreurs, il s'agit d'un changement de contexte, et non d'un message d'état
+- Les messages de succès qui apparaissent sans déplacer le focus sont annoncés automatiquement **(WCAG 4.1.3 - AA)**
 - La validation en temps réel est perceptible sans être intrusive **(WCAG 3.3.1 - A)**
-- Les alertes et notifications sont clairement annoncées **(WCAG 4.1.3 - AA)**
-- Aucun changement de contexte (nouvelle fenêtre, changement de page, saut du focus) ne se produit de manière inattendue lorsqu'un élément reçoit le focus ou lorsque la valeur d'un champ change, sauf si l'utilisateur en a été averti au préalable **(WCAG 3.2.1, 3.2.2 - A)**
-- Les messages d'erreur suggèrent des corrections **(WCAG 3.3.3 - AA)**
+- Les alertes et notifications qui ne prennent pas le focus sont clairement annoncées **(WCAG 4.1.3 - AA)**
+- Aucun changement de contexte (nouvelle fenêtre, changement de page, saut du focus) ne se produit lorsqu'un élément reçoit le focus, et aucun ne se produit lorsque la valeur d'un champ change, sauf si l'utilisateur en a été averti au préalable **(WCAG 3.2.1, 3.2.2 - A)**
+- Les messages d'erreur suggèrent des corrections lorsqu'elles sont connues, sauf si cela compromet la sécurité ou la finalité du contenu **(WCAG 3.3.3 - AA)**
 - Les messages de chargement/d'attente sont annoncés **(WCAG 4.1.3 - AA)**
 
 **Critères d'acceptation :**
 
 - ✅ Tous les messages d'erreur sont testés et accessibles
 - ✅ Les notifications importantes ne passent pas inaperçues
-- ✅ Les messages ne disparaissent pas trop vite **(WCAG 2.2.1 - A)**
+- ✅ Les messages temporaires ne disparaissent pas trop vite, sauf si la même information reste disponible ailleurs **(WCAG 2.2.1 - A)**
 
 ---
 
@@ -125,10 +126,10 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 **Objectif :** Organiser l'information de manière logique et navigable, et assurer la cohérence structurelle et de navigation sur l'ensemble du site.
 
-- La structure des titres est hiérarchique et cohérente (H1 → H2 → H3) **(WCAG 1.3.1 - A, 2.4.6 - AA)**
-- Chaque page a un titre H1 unique et descriptif. **[Inférence]** Le document source rattachait cette exigence au critère WCAG 2.4.2 ; or le critère 2.4.2 porte formellement sur l'élément `<title>` de la page (voir le point dédié ci-dessous), et non sur le H1. Un H1 unique et descriptif sert le même objectif de navigation en tant que bonne pratique, mais n'est pas en soi l'exigence littérale du critère 2.4.2.
-- Les titres reflètent fidèlement la structure du contenu **(WCAG 2.4.6 - AA)**
-- Les listes sont balisées sémantiquement (`<ul>`, `<ol>`, `<li>`) et étiquetées **(WCAG 1.3.1 - A)**
+- La structure des titres est hiérarchique et reflète la structure du contenu (H1 → H2 → H3) **(WCAG 1.3.1 - A)**
+- Chaque page a un titre H1 unique et descriptif (⚠️ bonne pratique, pas un critère WCAG : le critère 2.4.2 porte sur l'élément `<title>` de la page — voir le point dédié ci-dessous)
+- Les titres et les étiquettes décrivent le sujet ou la finalité de leur contenu **(WCAG 2.4.6 - AA)**
+- Les listes sont balisées sémantiquement (`<ul>`, `<ol>`, `<li>`) **(WCAG 1.3.1 - A)**
 - Les tableaux de données ont des en-têtes appropriés (`<th>`, `scope`) **(WCAG 1.3.1 - A)**
 - Les tableaux complexes utilisent `id` et `headers` pour l'association **(WCAG 1.3.1 - A)**
 - Les régions de repère sont utilisées correctement (`<main>`, `<header>`, `<footer>`, `<nav>`, `<aside>`, etc.) **(WCAG 1.3.1 - A)**
@@ -136,9 +137,9 @@ Pour chaque domaine fonctionnel, vous trouverez :
 - Les citations sont balisées avec `<blockquote>` **(WCAG 1.3.1 - A)**
 - Les définitions utilisent `<dl>`, `<dt>`, `<dd>` **(WCAG 1.3.1 - A)**
 - Chaque page a un élément `<title>` descriptif **(WCAG 2.4.2 - A)**
-- Les menus de navigation sont placés de manière cohérente d'une page à l'autre **(WCAG 3.2.3 - AA)**
-- Une même fonctionnalité porte le même libellé partout où elle apparaît **(WCAG 3.2.4 - AA)**
-- Les mécanismes d'aide répétés sur plusieurs pages (coordonnées, formulaire de contact, chat, FAQ) apparaissent dans le même ordre relatif **(WCAG 3.2.6 - A)**
+- Les menus de navigation répétés sur plusieurs pages apparaissent dans le même ordre relatif, sauf si l'utilisateur le modifie **(WCAG 3.2.3 - AA)**
+- Les composants qui ont la même fonctionnalité sont identifiés de manière cohérente (même libellé, même icône et même nom accessible) partout où ils apparaissent **(WCAG 3.2.4 - AA)**
+- Les mécanismes d'aide répétés sur plusieurs pages (coordonnées, formulaire de contact ou chat, aide en libre-service comme une FAQ) apparaissent dans le même ordre par rapport au reste du contenu de la page **(WCAG 3.2.6 - A)**
 
 **Critères d'acceptation :**
 
@@ -158,21 +159,25 @@ Pour chaque domaine fonctionnel, vous trouverez :
 - Toutes les images informatives ont des alternatives textuelles pertinentes (`alt`) **(WCAG 1.1.1 - A)**
 - Les images décoratives ont un attribut `alt=""` vide ou `role="presentation"` **(WCAG 1.1.1 - A)**
 - Les images complexes (graphiques, schémas) ont des descriptions détaillées **(WCAG 1.1.1 - A)**
+- Le texte est du vrai texte, et non une image de texte, sauf pour les logos et lorsqu'une présentation particulière est essentielle **(WCAG 1.4.5 - AA)**
 - Les vidéos pré-enregistrées ont des sous-titres synchronisés **(WCAG 1.2.2 - A)**
 - Les vidéos en direct ont des sous-titres synchronisés **(WCAG 1.2.4 - AA)**
 - Les vidéos pré-enregistrées ont une audio-description ou une transcription textuelle **(WCAG 1.2.3 - A)**
 - Les vidéos pré-enregistrées ont une audio-description des informations visuelles importantes **(WCAG 1.2.5 - AA)**
-- Les contenus audio ont des transcriptions **(WCAG 1.2.1 - A)**
-- Les animations peuvent être mises en pause ou désactivées **(WCAG 2.2.2 - A)**
+- Les contenus audio seuls pré-enregistrés ont une transcription ; les contenus vidéo seuls pré-enregistrés ont une alternative textuelle ou une piste audio **(WCAG 1.2.1 - A)**
+- Un son qui démarre automatiquement et dure plus de 3 secondes peut être mis en pause ou arrêté, ou son volume peut être réglé indépendamment du volume du système **(WCAG 1.4.2 - A)**
+- Un contenu en mouvement, clignotant ou défilant qui démarre automatiquement, dure plus de 5 secondes et est présenté en parallèle d'autres contenus peut être mis en pause, arrêté ou masqué **(WCAG 2.2.2 - A)**
+- Aucun contenu ne flashe plus de trois fois par seconde, sauf si les flashs restent sous les seuils de flash général et de flash rouge **(WCAG 2.3.1 - A)**
 - Les graphiques interactifs ont des alternatives accessibles **(WCAG 1.1.1 - A)**
 - Les infographies ont des descriptions textuelles complètes **(WCAG 1.1.1 - A)**
-- Les CAPTCHA ont des alternatives audio ou logiques **(WCAG 1.1.1 - A)**
+- Les CAPTCHA décrivent leur finalité sous forme de texte et proposent une forme alternative faisant appel à un autre sens (par ex. une version visuelle et une version audio) **(WCAG 1.1.1 - A)**
 
 **Critères d'acceptation :**
 
 - ✅ Aucune information ne dépend uniquement d'un contenu visuel
 - ✅ Toutes les vidéos critiques ont des sous-titres
 - ✅ Les alternatives textuelles sont pertinentes et suffisantes
+- ✅ Aucun son ni aucune animation automatique ne tourne sans moyen de l'arrêter, et rien ne flashe plus de trois fois par seconde
 
 ---
 
@@ -180,18 +185,18 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 **Objectif :** Gérer de manière accessible les mises à jour dynamiques et les interactions complexes.
 
-- Les mises à jour dynamiques du contenu sont annoncées (`aria-live`, `role="status"`) **(WCAG 4.1.3 - AA)**
+- Les messages d'état (résultats, confirmations, progression) sont annoncés sans recevoir le focus (`aria-live`, `role="status"`) **(WCAG 4.1.3 - AA)**
 - Les modales/popups sont identifiées (`role="dialog"` ou `role="alertdialog"`) **(WCAG 4.1.2 - A)**
 - Le focus est automatiquement déplacé dans les modales à leur ouverture **(WCAG 2.4.3 - A)**
 - Le focus revient sur l'élément déclencheur à la fermeture des modales **(WCAG 2.4.3 - A)**
-- Les modales peuvent être fermées au clavier (Échap) **(WCAG 2.1.1, 2.1.2 - A)**
+- Les modales peuvent être fermées au clavier, ce qui rend le contrôle du clavier à la page **(WCAG 2.1.1, 2.1.2 - A)** ; la fermeture avec Échap est la convention de l'APG
 - Les accordéons indiquent leur état (ouvert/fermé) via `aria-expanded` **(WCAG 4.1.2 - A)**
-- Les onglets sont navigables au clavier (flèches gauche/droite) **(WCAG 2.1.1 - A)**
+- Les onglets sont utilisables au clavier **(WCAG 2.1.1 - A)** ; les flèches gauche/droite sont la convention de l'APG
 - Les onglets indiquent l'onglet actif via `aria-selected` **(WCAG 4.1.2 - A)**
-- Les carrousels peuvent être mis en pause **(WCAG 2.2.2 - A)**
+- Les carrousels qui défilent automatiquement peuvent être mis en pause **(WCAG 2.2.2 - A)**
 - Les carrousels sont contrôlables au clavier **(WCAG 2.1.1 - A)**
-- Les infobulles sont accessibles au clavier et au focus, peuvent être masquées et restent visibles lorsqu'elles sont survolées **(WCAG 1.4.13 - AA)**
-- Les contenus chargés en AJAX sont annoncés **(WCAG 4.1.3 - AA)**
+- Les infobulles et autres contenus affichés au survol ou au focus peuvent être affichés au clavier **(WCAG 2.1.1 - A)**, peuvent être masqués sans déplacer le pointeur ni le focus (par ex. Échap), restent visibles lorsque le pointeur passe dessus, et restent affichés jusqu'à leur fermeture ou tant qu'ils sont pertinents **(WCAG 1.4.13 - AA)**. Les infobulles natives du navigateur (attribut `title`) sont exemptées du critère 1.4.13
+- Lorsqu'un contenu est chargé de manière asynchrone (AJAX), le message d'état qui en résulte (par ex. « 20 résultats chargés ») est annoncé **(WCAG 4.1.3 - AA)**
 
 **Critères d'acceptation :**
 
@@ -207,12 +212,12 @@ Pour chaque domaine fonctionnel, vous trouverez :
 
 - Toute information visuelle a un équivalent textuel **(WCAG 1.1.1 - A)**
 - La langue principale de la page est correctement définie dans le code **(WCAG 3.1.1 - A)**
-- Le langage utilisé est clair et adapté au public cible **(WCAG 3.1.5 - AAA)**
-- Les abréviations et acronymes sont expliqués (`<abbr title="">`) **(WCAG 3.1.4 - AAA)**
-- Les instructions ne reposent pas uniquement sur des caractéristiques visuelles (couleur, forme, position) **(WCAG 1.3.3 - A, 1.4.1 - A)**
-- Les changements de langue dans le contenu sont indiqués dans le code (attribut `lang`) **(WCAG 3.1.2 - AA)**
-- Les termes techniques sont définis ou expliqués **(WCAG 3.1.3 - AAA)**
-- Les contenus complexes sont accompagnés d'explications **(WCAG 3.1.5 - AAA)**
+- Le langage utilisé est clair et adapté au public cible (en lien avec le critère **WCAG 3.1.5 - AAA**, qui vise un niveau de lecture ne dépassant pas le premier cycle du secondaire)
+- Les abréviations et acronymes peuvent être développés (par ex. forme complète à la première occurrence, glossaire, `<abbr title="">`) **(WCAG 3.1.4 - AAA)**
+- Les instructions ne reposent pas uniquement sur des caractéristiques sensorielles (forme, couleur, taille, emplacement visuel, orientation ou son) **(WCAG 1.3.3 - A, 1.4.1 - A)**
+- Les changements de langue dans le contenu sont indiqués dans le code (attribut `lang`), sauf pour les noms propres, les termes techniques et les mots entrés dans la langue environnante **(WCAG 3.1.2 - AA)**
+- Les mots employés dans un sens inhabituel ou restreint (jargon, expressions idiomatiques, termes techniques) sont définis ou expliqués **(WCAG 3.1.3 - AAA)**
+- Les contenus complexes sont accompagnés d'explications (en lien avec le critère **WCAG 3.1.5 - AAA**)
 
 > **Note :** Les critères propres au contraste des couleurs (1.4.3, 1.4.11), au zoom et au reflow (1.4.10), à la taille de texte ajustable (1.4.4) et à l'espacement du texte (1.4.12) ne sont pas repris ici — voir les thèmes dédiés **Zoom et redimensionnement**, **Espacement du texte** et **Contrastes visuels** ci-dessous pour leurs étapes de vérification et critères d'acceptation complets.
 
@@ -230,10 +235,10 @@ Pour chaque domaine fonctionnel, vous trouverez :
 **Objectif :** Valider que les parcours utilisateur essentiels sont entièrement accessibles.
 
 - Le processus de connexion/authentification est accessible
-- La connexion n'exige pas de test de fonction cognitive (mémoriser ou recopier un mot de passe, résoudre une énigme) sans alternative — par exemple, les gestionnaires de mots de passe et le copier-coller ne sont pas bloqués **(WCAG 3.3.8 - AA)**
+- Aucune étape de la connexion n'exige de test de fonction cognitive (mémoriser ou recopier un mot de passe ou un code, résoudre une énigme), sauf si une méthode alternative ou un mécanisme d'assistance est disponible — par exemple, les gestionnaires de mots de passe et le copier-coller ne sont pas bloqués. Reconnaître des objets et identifier un contenu fourni par l'utilisateur sont admis à ce niveau **(WCAG 3.3.8 - AA)**
 - L'inscription / la création de compte est réalisable
 - Les transactions importantes peuvent être menées à bien (achat, paiement, soumission)
-- Les soumissions ayant des conséquences juridiques ou financières peuvent être relues, corrigées ou confirmées avant leur finalisation **(WCAG 3.3.4 - AA)**
+- Les soumissions qui créent des engagements juridiques ou financiers, modifient ou suppriment des données de l'utilisateur, ou envoient des réponses à un test sont réversibles, vérifiées (avec la possibilité de corriger les erreurs de saisie), ou peuvent être relues et confirmées avant leur finalisation **(WCAG 3.3.4 - AA)**
 - La recherche est utilisable et les résultats sont accessibles
 - Les filtres et le tri sont accessibles au clavier
 - La pagination est navigable au clavier
@@ -242,7 +247,7 @@ Pour chaque domaine fonctionnel, vous trouverez :
 - Les tableaux de bord et les statistiques sont compréhensibles
 - La déconnexion est accessible
 
-En dehors des deux points référencés ci-dessus, cette section ne constitue pas en soi un critère WCAG. Elle vérifie la conformité opérationnelle des critères A et AA sur les parcours métier — principalement les critères d'accessibilité au clavier 2.1.1 et 2.1.2, et l'exigence de conformité des processus complets (WCAG 2.2, section 5.2.3).
+En dehors des deux points référencés ci-dessus, cette section ne constitue pas en soi un critère WCAG. Elle vérifie la conformité opérationnelle des critères A et AA sur les parcours métier — principalement les critères d'accessibilité au clavier 2.1.1 et 2.1.2, et l'exigence de conformité des processus complets (WCAG 2.2, section 5.2.3 : lorsqu'une page fait partie d'un processus, toutes les pages du processus doivent être conformes).
 
 **Critères d'acceptation :**
 
@@ -256,12 +261,13 @@ En dehors des deux points référencés ci-dessus, cette section ne constitue pa
 
 **Objectif :** Éviter que des limites de temps ne bloquent la réalisation des tâches.
 
-- Les limites de temps peuvent être désactivées ou ajustées par l'utilisateur **(WCAG 2.2.1 - A)**
-- Les sessions peuvent être prolongées ou sauvegardées avant leur expiration **(WCAG 2.2.1 - A)**
-- Les contenus en mouvement ou animés peuvent être mis en pause ou désactivés **(WCAG 2.2.2 - A)**
-- Les mises à jour automatiques (par ex. actualisation de la page) peuvent être contrôlées par l'utilisateur **(WCAG 2.2.4 - AAA)**
-- Les interruptions (par ex. pop-ups) peuvent être reportées ou désactivées **(WCAG 2.2.4 - AAA)**
-- Le temps accordé pour les actions de l'utilisateur (par ex. soumission d'un formulaire) est suffisamment long ou ajustable **(WCAG 2.2.1 - A)**
+- Chaque limite de temps imposée par le contenu peut être désactivée, ajustée (jusqu'à au moins dix fois la durée par défaut) ou prolongée après un avertissement — sauf pour les événements en temps réel, les limites essentielles et les limites de plus de 20 heures **(WCAG 2.2.1 - A)**
+- Avant l'expiration d'une session, l'utilisateur est averti et peut la prolonger par une action simple, avec au moins 20 secondes pour réagir **(WCAG 2.2.1 - A)**
+- Les contenus en mouvement ou animés peuvent être mis en pause, arrêtés ou masqués **(WCAG 2.2.2 - A)**
+- Les contenus mis à jour automatiquement en parallèle d'autres contenus (fil d'actualités, résultats en direct) peuvent être mis en pause, arrêtés, masqués, ou leur fréquence de mise à jour peut être réglée **(WCAG 2.2.2 - A)**
+- Les actualisations automatiques de la page et les mises à jour de contenu peuvent être reportées ou désactivées par l'utilisateur **(WCAG 2.2.4 - AAA)**
+- Les interruptions (par ex. pop-ups) peuvent être reportées ou supprimées, sauf en cas d'urgence **(WCAG 2.2.4 - AAA)**
+- La gestion du temps n'est pas un élément essentiel de l'activité : aucune limite de temps n'est imposée, sauf pour les médias synchronisés non interactifs et les événements en temps réel **(WCAG 2.2.3 - AAA)**
 
 **Critères d'acceptation :**
 
@@ -275,16 +281,16 @@ En dehors des deux points référencés ci-dessus, cette section ne constitue pa
 
 **Objectif :** Assurer l'utilisabilité avec des niveaux de zoom élevés et de petites largeurs de fenêtre.
 
-- Le contenu est utilisable à 200 % de zoom **(WCAG 1.4.4 - AA)**
-- Le contenu est utilisable à 400 % de zoom ou avec une largeur de fenêtre de 320 px **(WCAG 1.4.10 - AA)**
-- Aucun défilement horizontal n'est nécessaire pour lire le contenu principal **(WCAG 1.4.10 - AA)**
-- Aucun texte n'est tronqué ni ne se chevauche
-- Les tableaux larges ont une alternative accessible
+- Le texte peut être agrandi à 200 % (zoom du navigateur) sans perte de contenu ni de fonctionnalité **(WCAG 1.4.4 - AA)**
+- À 400 % de zoom dans une fenêtre de 1280 px CSS de large (équivalent à une fenêtre de 320 px CSS), le contenu se réorganise sans perte d'information ni de fonctionnalité **(WCAG 1.4.10 - AA)**
+- Aucun défilement horizontal n'est nécessaire pour lire un contenu qui défile verticalement **(WCAG 1.4.10 - AA)**
+- Aucun texte n'est tronqué ni ne se chevauche **(WCAG 1.4.4, 1.4.10 - AA)**
+- Les contenus qui nécessitent une présentation en deux dimensions (tableaux de données, cartes, schémas) sont exemptés du critère 1.4.10 et peuvent conserver un défilement horizontal, mais le contenu qui les entoure (titres, champs de recherche, pagination) doit tout de même se réorganiser **(WCAG 1.4.10 - AA)**. Placer un tableau large dans son propre conteneur défilant est une solution courante
 
 **Critères d'acceptation :**
 
 - ✅ 100 % du contenu et des fonctionnalités restent accessibles à 200 %
-- ✅ À 400 %, aucune lecture ne nécessite de défilement horizontal
+- ✅ À 400 %, aucune lecture ne nécessite de défilement horizontal (sauf à l'intérieur des tableaux de données et des autres contenus en deux dimensions)
 - ✅ Aucun composant critique ne devient inutilisable
 - ✅ Aucun contenu n'est masqué ou coupé
 
@@ -294,12 +300,12 @@ En dehors des deux points référencés ci-dessus, cette section ne constitue pa
 
 **Objectif :** Assurer la robustesse face aux adaptations de lisibilité.
 
-Application manuelle des valeurs suivantes :
+Application manuelle des valeurs suivantes (par exemple via les DevTools ou un bookmarklet d'espacement du texte) :
 
-- `line-height: 1.5`
-- `letter-spacing: 0.12em`
-- `word-spacing: 0.16em`
-- `paragraph spacing: 2em`
+- Hauteur de ligne : 1,5 × la taille de police (`line-height: 1.5`)
+- Espacement après les paragraphes : 2 × la taille de police (par ex. `p { margin-bottom: 2em }`)
+- Espacement des lettres : 0,12 × la taille de police (`letter-spacing: 0.12em`)
+- Espacement des mots : 0,16 × la taille de police (`word-spacing: 0.16em`)
 
 Vérifications **(WCAG 1.4.12 - AA)** :
 
@@ -311,7 +317,7 @@ Vérifications **(WCAG 1.4.12 - AA)** :
 
 - ✅ L'application reste entièrement fonctionnelle
 - ✅ Aucun texte ne se chevauche
-- ✅ Aucun défilement horizontal supplémentaire n'est généré
+- ✅ Aucun défilement horizontal supplémentaire n'est généré (bonne pratique)
 
 ---
 
@@ -320,10 +326,11 @@ Vérifications **(WCAG 1.4.12 - AA)** :
 **Objectif :** Assurer la perceptibilité du contenu et des composants.
 
 - Contraste du texte normal ≥ 4,5:1 **(WCAG 1.4.3 - AA)**
-- Contraste du texte de grande taille ≥ 3:1 **(WCAG 1.4.3 - AA)**
-- Contraste des composants d'interface (bordures de champs, icônes informatives, boutons) ≥ 3:1 **(WCAG 1.4.11 - AA)**
+- Contraste du texte de grande taille (au moins 18 pt, ou 14 pt en gras — soit environ 24 px, ou 18,5 px en gras) ≥ 3:1 **(WCAG 1.4.3 - AA)**
+- Le texte des composants désactivés, le texte purement décoratif et les logos n'ont pas d'exigence de contraste **(WCAG 1.4.3 - AA)**
+- Les composants d'interface et les graphiques porteurs de sens (bordures qui identifient un champ, icônes informatives, boutons, éléments de graphiques) ont un contraste ≥ 3:1 par rapport aux couleurs adjacentes **(WCAG 1.4.11 - AA)**
 - Les indicateurs de focus respectent le même ratio de contraste non textuel que les autres composants d'interface **(WCAG 1.4.11 - AA)** — voir le thème 1 pour l'exigence d'un focus visible en permanence
-- Les états (erreur, actif, sélectionné) ne sont pas transmis uniquement par la couleur **(WCAG 1.4.1 - A)**
+- Les états (erreur, actif, sélectionné) ne sont pas transmis uniquement par la couleur **(WCAG 1.4.1 - A)**, et l'indicateur visuel d'un état a un contraste ≥ 3:1 **(WCAG 1.4.11 - AA)**
 
 **Critères d'acceptation :**
 
@@ -340,7 +347,7 @@ Vérifications **(WCAG 1.4.12 - AA)** :
 
 - Fonctionne correctement en orientation portrait **(WCAG 1.3.4 - AA)**
 - Fonctionne correctement en orientation paysage **(WCAG 1.3.4 - AA)**
-- Aucune interaction n'est bloquée en fonction de l'orientation **(WCAG 1.3.4 - AA)**
+- Aucun contenu ni aucune interaction n'est limité à une seule orientation, sauf si une orientation particulière est essentielle (par ex. une application de piano, un chèque bancaire) **(WCAG 1.3.4 - AA)**
 
 **Critères d'acceptation :**
 
@@ -353,16 +360,17 @@ Vérifications **(WCAG 1.4.12 - AA)** :
 
 **Objectif :** Assurer l'accessibilité pour les utilisateurs d'écrans tactiles et ceux ayant des limitations motrices.
 
-- Les gestes complexes (multipoints ou basés sur un tracé) ont une alternative simple à pointeur unique **(WCAG 2.5.1 - A)**
-- Les actions ne sont pas déclenchées uniquement au « toucher » (touch down) **(WCAG 2.5.2 - A)**
-- Les actions critiques peuvent être annulées **(WCAG 2.5.2 - A)**
+- Les gestes multipoints ou basés sur un tracé (pincer, balayer, dessiner un tracé) ont une alternative à pointeur unique sans tracé, sauf si le geste est essentiel **(WCAG 2.5.1 - A)**
+- Les actions ne sont pas déclenchées à l'événement « down » (appui du doigt, bouton de souris enfoncé), sauf si c'est essentiel **(WCAG 2.5.2 - A)**
+- Une action lancée par erreur peut être interrompue avant sa fin (en éloignant le pointeur avant de relâcher) ou annulée ensuite **(WCAG 2.5.2 - A)**
+- Les fonctions déclenchées par un mouvement de l'appareil ou de l'utilisateur (secouer, incliner) peuvent aussi être activées par des composants d'interface, et la réaction au mouvement peut être désactivée **(WCAG 2.5.4 - A)**
 - Chaque action de glisser-déposer a une alternative à pointeur unique sans glisser (par ex. des boutons ou un menu) **(WCAG 2.5.7 - AA)**
 
 **Critères d'acceptation :**
 
-- ✅ 100 % des gestes complexes et des mouvements de glisser ont une alternative
+- ✅ 100 % des gestes complexes, des mouvements de glisser et des fonctions déclenchées par le mouvement ont une alternative
 - ✅ Aucune action irréversible n'est déclenchée accidentellement
-- ✅ Les actions critiques peuvent être confirmées
+- ✅ Les actions critiques peuvent être confirmées (bonne pratique)
 
 ---
 
@@ -370,8 +378,9 @@ Vérifications **(WCAG 1.4.12 - AA)** :
 
 **Objectif :** Réduire les erreurs d'activation.
 
-- Les cibles mesurent au moins 24 × 24 px CSS, ou sont espacées de sorte qu'un cercle de 24 px centré sur chaque cible ne chevauche pas une autre cible **(WCAG 2.5.8 - AA)**
-- Les cibles critiques mesurent au moins 44 × 44 px CSS **(WCAG 2.5.5 - AAA)**
+- Les cibles de pointeur mesurent au moins 24 × 24 px CSS, ou les cibles plus petites sont espacées de sorte qu'un cercle de 24 px CSS de diamètre centré sur chacune ne touche ni une autre cible ni le cercle d'une autre petite cible **(WCAG 2.5.8 - AA)**
+- Exceptions au critère 2.5.8 : un contrôle équivalent de la même page respecte la taille, la cible est intégrée dans une phrase, sa taille est fixée par le navigateur et n'est pas modifiée, ou une présentation particulière est essentielle ou exigée par la loi **(WCAG 2.5.8 - AA)**
+- Les cibles mesurent au moins 44 × 44 px CSS **(WCAG 2.5.5 - AAA)** — au-delà de l'exigence AA, recommandé au moins pour les actions critiques
 - Les éléments proches ne provoquent pas d'erreurs d'interaction **(WCAG 2.5.8 - AA)**
 
 **Critères d'acceptation :**
@@ -411,96 +420,88 @@ Pour les composants JS personnalisés / non natifs :
 
 ## Checklist par niveau de conformité WCAG
 
-Cette section organise et résume les exigences des WCAG 2.2 en trois catégories distinctes :
+Cette section transforme les thèmes ci-dessus en trois checklists courtes et pratiques, une par niveau de conformité, à appliquer pendant les tests d'intégration et les tests système. Chaque ligne regroupe des critères de succès qui peuvent être testés ensemble, avec les mêmes outils et dans le même passage ; il ne s'agit pas de la liste complète des WCAG triée par niveau.
 
-- **Critères fondamentaux**, indispensables pour éliminer les blocages majeurs : niveau A, plus quelques critères de niveau AA jugés critiques ;
-- **Critères légaux**, correspondant au niveau AA, le niveau exigé par les cadres juridiques ;
-- **Critères d'excellence**, alignés sur le niveau AAA, plus des bonnes pratiques qui ne sont pas des exigences WCAG, pour améliorer le confort des utilisateurs.
+- **Critères fondamentaux (niveau A)** : les 31 critères de succès de niveau A des WCAG 2.2, regroupés en 20 vérifications. Un échec à ce niveau bloque généralement complètement certains utilisateurs.
+- **Critères légaux (niveau AA)** : les 24 critères de succès de niveau AA, regroupés en 18 vérifications. Le niveau AA est le niveau exigé par les cadres juridiques.
+- **Critères d'excellence (niveau AAA et bonnes pratiques)** : une sélection de critères AAA et de bonnes pratiques utiles dans les applications métier.
 
-Chaque catégorie définit un palier de conformité, des exigences minimales qui évitent les blocages d'accès jusqu'aux bonnes pratiques pour une accessibilité optimale.
+Pour chaque vérification, le tableau indique un libellé court, ce qu'il faut vérifier, les critères de succès WCAG et le niveau couverts, et la manière de le vérifier.
 
-Pour chaque critère, un tableau détaillé présente son libellé précis, une description claire de l'exigence et de son impact sur l'expérience utilisateur, le critère de succès WCAG et son niveau, une méthode de vérification pas à pas et la référence du test Xray correspondant lorsqu'il existe déjà. **Les lignes ont été triées par niveau WCAG : chaque ligne conserve son cas de test Xray et son étape d'origine, si bien qu'un même cas de test Xray peut apparaître dans plusieurs tableaux. Les lignes sans cas de test Xray sont laissées vides et seront complétées lorsque de nouveaux cas de test auront été créés.**
-
-L'objectif est de donner aux équipes une base de référence unifiée pour comprendre les attentes associées à chaque niveau de conformité, prioriser les corrections selon les contraintes du projet et mesurer objectivement les progrès en accessibilité.
+**Objectif :** préparer l'application à la revue d'expert (voir la section 4.6 du support de cours) en détectant et en corrigeant tôt les problèmes les plus fréquents. Ces checklists ne remplacent pas cette revue : réussir toutes les lignes ne prouve pas la conformité, car la revue d'expert évalue chaque critère de succès en détail, sur un échantillon représentatif de pages et sur des processus complets.
 
 ### Critères fondamentaux (niveau A — éliminer les blocages)
 
-Cette section regroupe les exigences minimales WCAG de niveau A, ainsi que certains critères de niveau AA jugés critiques pour éviter les **blocages** d'accès (marqués **AA** dans la colonne WCAG). Ces critères garantissent un accès de base à l'information et aux fonctionnalités, sans lequel certains utilisateurs en situation de handicap ne pourraient tout simplement pas utiliser le service.
+Ce tableau couvre les 31 critères de succès de niveau A des WCAG 2.2. Ces critères garantissent un accès de base à l'information et aux fonctionnalités, sans lequel certains utilisateurs en situation de handicap ne pourraient tout simplement pas utiliser le service.
 
-| Critère | Description | WCAG | Comment vérifier | Test Xray | Étape(s) |
-| --- | --- | --- | --- | --- | --- |
-| **Fonctionnalités critiques accessibles** | 100 % des parcours essentiels (connexion, transactions, recherche, activation/désactivation de services) sont réalisables au clavier avec un lecteur d'écran | 2.1.1, 2.1.2 (A) | Tester tous les parcours métier majeurs de bout en bout sans souris | AFCXRAY-12125 | Étape 1 |
-| **Navigation complète au clavier** | Toutes les zones et fonctionnalités sont accessibles sans souris (Tab, Maj+Tab, Entrée, Espace, flèches) | 2.1.1 (A) | Parcourir toute l'application uniquement au clavier | AFCXRAY-12125 | Étape 2 |
-| **Gestion du focus** | Le focus clavier suit un ordre logique, sans sauts ni pièges, et est toujours visible | 2.4.3, 2.1.2 (A) ; 2.4.7 (AA) | Vérifier visuellement le focus et confirmer qu'il est possible de sortir de chaque zone | AFCXRAY-12125 | Étape 3 |
-| **Messages d'erreur accessibles** | Tous les messages d'erreur sont lisibles par le lecteur d'écran, annoncés automatiquement et associés aux champs concernés | 3.3.1 (A) ; 4.1.3 (AA) | Déclencher volontairement des erreurs et vérifier leur annonce | AFCXRAY-12125 | Étape 4 |
-| **Formulaires identifiables** | Tous les champs ont des étiquettes explicites (`<label for='field_id'>`, ou `aria-labelledby` / `aria-label`) et les champs obligatoires sont identifiés | 3.3.2, 1.3.1, 4.1.2 (A) | Tester tous les formulaires avec le lecteur d'écran | AFCXRAY-12125 | Étape 5 |
-| **Modales/popups identifiées** | Les fenêtres modales sont annoncées comme telles (`role="dialog"`), avec un focus géré à l'ouverture et à la fermeture | 4.1.2, 2.4.3 (A) | Ouvrir toutes les modales et vérifier l'annonce et la gestion du focus | AFCXRAY-12125 | Étape 6 |
-| **Alternatives textuelles** | Toutes les images informatives ont des attributs `alt` pertinents ; les images décoratives sont masquées | 1.1.1 (A) | Parcourir l'application et écouter toutes les descriptions d'images | AFCXRAY-12125 | Étape 7 |
-| **Structure de titres cohérente** | La hiérarchie H1–H6 reflète la structure du contenu sur chaque page. Ne sauter aucun niveau et avoir un seul H1 par page sont des bonnes pratiques | 1.3.1 (A) ; 2.4.6 (AA) | Utiliser la navigation par titres du lecteur d'écran sur chaque page | AFCXRAY-12125 | Étape 8 |
-| **Contexte des actions** | Les actions (boutons, liens) fournissent assez de contexte pour comprendre leur effet sans information visuelle | 2.4.4, 4.1.2 (A) | Tester tous les boutons/liens et vérifier que leur fonction est claire | AFCXRAY-12125 | Étape 9 |
-| **Ordre de présentation logique** | L'information est présentée dans un ordre qui a du sens (contexte avant les détails, statut avant les coordonnées) | 1.3.2 (A) | Écouter l'annonce complète de chaque section et vérifier la cohérence | AFCXRAY-12126 | Étape 1 |
-| **Régions de repère** | Utilisation correcte de `<main>`, `<header>`, `<footer>`, `<nav>`, ou de `role="main"`, `role="navigation"`, `role="search"`, etc. lorsque les éléments natifs ne sont pas utilisés | 1.3.1 (A) | Vérifier la structure des repères avec les outils de développement et la navigation par repères du lecteur d'écran | AFCXRAY-12126 | Étape 3 |
-| **États des composants** | Les états (ouvert/fermé, coché/décoché, activé/désactivé) sont correctement annoncés | 4.1.2 (A) | Tester tous les composants interactifs et leurs différents états | AFCXRAY-12126 | Étape 5 |
-| **Instructions de saisie** | Les formats et contraintes attendus sont annoncés avant ou pendant la saisie | 3.3.2 (A) | Tester tous les champs avec contraintes (date, téléphone, e-mail, etc.) | AFCXRAY-12126 | Étape 6 |
-| **Retour du focus après une action** | Après une action (fermeture d'une modale, soumission d'un formulaire), le focus revient à un emplacement logique | 2.4.3 (A) | Effectuer des actions et vérifier où arrive le focus | AFCXRAY-12126 | Étape 7 |
-| **Tableaux de données** | Les tableaux ont des en-têtes appropriés et sont compréhensibles pour le lecteur d'écran | 1.3.1 (A) | Parcourir tous les tableaux en mode tableau du lecteur d'écran | AFCXRAY-12126 | Étape 8 |
-| **Liens d'évitement** | Un lien « Aller au contenu principal » (ou des repères et des titres) permet de contourner les blocs répétés | 2.4.1 (A) | Appuyer sur Tab dès l'arrivée sur la page | AFCXRAY-12127 | Étape 1 |
-| **Raccourcis clavier utilisant des caractères** | Les raccourcis à une seule touche caractère peuvent être désactivés ou reconfigurés, ou ne sont actifs qu'au focus | 2.1.4 (A) | Tester les raccourcis et vérifier qu'ils peuvent être désactivés ou reconfigurés | AFCXRAY-12127 | Étape 2 |
-| **Sous-titres des vidéos** | Des sous-titres synchronisés sont présents pour tous les contenus vidéo pré-enregistrés | 1.2.2 (A) | Regarder toutes les vidéos avec les sous-titres activés | AFCXRAY-12127 | Étape 3 |
-| **Transcriptions audio** | Les contenus audio pré-enregistrés ont des transcriptions textuelles disponibles | 1.2.1 (A) | Vérifier la disponibilité des transcriptions | AFCXRAY-12127 | Étape 4 |
-| **Contrôle des animations** | Possibilité de mettre en pause, d'arrêter ou de masquer les animations automatiques | 2.2.2 (A) | Tester les carrousels et les animations automatiques | AFCXRAY-12127 | Étape 5 |
-| **Descriptions détaillées** | Les graphiques complexes ont des descriptions longues (`aria-describedby` ou liens vers des descriptions) | 1.1.1 (A) | Parcourir tous les graphiques et schémas | AFCXRAY-12127 | Étape 6 |
-| **Titres de page descriptifs** | Chaque page a un élément `<title>` descriptif | 2.4.2 (A) | Inspecter l'élément `<title>` du DOM sur chaque page | | |
-| **Utilisation de la couleur** | L'information et les états ne sont pas transmis uniquement par la couleur | 1.4.1 (A) | Effectuer une inspection visuelle des états et des instructions | | |
-| **Gestes de pointeur** | Les gestes complexes ont une alternative simple à pointeur unique | 2.5.1 (A) | Effectuer un test tactile de tous les gestes | | |
-| **Annulation du pointeur** | Les actions critiques peuvent être annulées et ne sont pas déclenchées uniquement au « toucher » (touch down) | 2.5.2 (A) | Tester avec la souris et au toucher | | |
-| **Nom/Rôle/Valeur** | Les composants personnalisés exposent un nom accessible, un rôle et une valeur/un état corrects via le DOM | 4.1.2 (A) | Inspecter les attributs DOM/ARIA des composants personnalisés avec les DevTools du navigateur | | |
-| **Libellé dans le nom** | Lorsqu'un composant a un libellé texte visible, son nom accessible inclut programmatiquement ce texte visible | 2.5.3 (A) | Comparer le libellé visible de chaque composant avec son nom accessible calculé dans les DevTools | | |
-| **Aide cohérente** | Les mécanismes d'aide répétés sur plusieurs pages apparaissent dans le même ordre relatif | 3.2.6 (A) | Parcourir plusieurs pages et comparer la position des mécanismes d'aide | | |
-| **Saisie redondante** | Une information déjà saisie dans le même processus n'est pas redemandée, ou est pré-remplie ou sélectionnable | 3.3.7 (A) | Parcourir les processus en plusieurs étapes et noter toute donnée demandée deux fois | | |
-| **Reflow à 400 % de zoom** | Le contenu reste utilisable à 400 % de zoom ou avec une largeur de fenêtre de 320 px, sans défilement horizontal nécessaire pour lire le contenu principal | 1.4.10 (AA) | Régler le zoom à 400 % (ou la fenêtre à 320 px) et confirmer qu'aucun défilement horizontal n'est nécessaire et qu'aucun contenu n'est perdu | | |
-| **Contraste textuel et non textuel** | Les ratios de contraste du texte et des composants d'interface respectent les seuils WCAG — 4,5:1 pour le texte normal, 3:1 pour le texte de grande taille et les composants d'interface | 1.4.3, 1.4.11 (AA) | Mesurer les ratios de contraste avec un outil de vérification du contraste | | |
-| **Focus visible** | Un indicateur de focus est toujours visible et suffisamment contrasté sur chaque élément focalisable | 2.4.7, 1.4.11 (AA) | Parcourir toute l'interface au clavier et confirmer que l'indicateur est toujours visible | | |
-| **Redimensionnement du texte à 200 %** | Le contenu reste utilisable et aucun contenu n'est perdu à 200 % de zoom | 1.4.4 (AA) | Régler le zoom du navigateur à 200 % et vérifier que rien n'est perdu ni cassé | | |
-| **Espacement du texte** | L'application de valeurs augmentées d'interligne, d'espacement des lettres, des mots et des paragraphes ne provoque ni chevauchement ni perte de contenu | 1.4.12 (AA) | Appliquer les valeurs d'espacement indiquées via le CSS des DevTools et rechercher les chevauchements | | |
+| Critère | Description | WCAG | Comment vérifier |
+| --- | --- | --- | --- |
+| **Accès au clavier** | Chaque fonctionnalité et chaque parcours critique (connexion, formulaires, transactions, recherche, déconnexion) peut être réalisé au clavier seul, et le focus peut toujours quitter chaque composant | 2.1.1, 2.1.2 (A) | 1. Ne plus utiliser la souris ni le pavé tactile.<br>2. Réaliser chaque parcours critique (connexion, formulaire principal, transaction, recherche, déconnexion) uniquement avec Tab, Maj+Tab, Entrée, Espace, les flèches et Échap.<br>3. Dans chaque widget (menu, dialogue, sélecteur de date, lecteur intégré), essayer d'en sortir avec Tab, Maj+Tab ou Échap.<br>✅ **Réussi :** chaque parcours peut être réalisé, et le focus ne reste jamais bloqué. |
+| **Ordre et gestion du focus** | Le focus se déplace dans un ordre qui préserve le sens ; il entre dans un dialogue à son ouverture et revient à un endroit logique (en général l'élément déclencheur) à sa fermeture | 2.4.3 (A) | 1. Depuis le haut de la page, appuyer plusieurs fois sur Tab et observer où va le focus.<br>2. Ouvrir chaque dialogue : le focus doit arriver à l'intérieur.<br>3. Le fermer : le focus doit revenir sur le bouton qui l'a ouvert, ou à un autre endroit logique.<br>4. Soumettre un formulaire avec une erreur et noter où arrive le focus.<br>✅ **Réussi :** le focus suit l'ordre logique de la page et ne saute jamais à un endroit inattendu (par exemple, retour en haut de la page). |
+| **Raccourcis clavier utilisant des caractères** | Les raccourcis à une seule touche caractère (lettre, chiffre, ponctuation) peuvent être désactivés ou reconfigurés, ou ne sont actifs que lorsque leur composant a le focus | 2.1.4 (A) | 1. Désactiver le lecteur d'écran (en mode navigation, il utilise lui-même les lettres seules).<br>2. Cliquer sur une zone vide de la page, en dehors de tout champ de texte.<br>3. Appuyer sur des touches lettre, chiffre et ponctuation seules (par exemple s, k, 1, ?).<br>4. Si quelque chose se passe, chercher un réglage pour désactiver ou modifier le raccourci, ou vérifier qu'il ne fonctionne que lorsque son composant a le focus.<br>✅ **Réussi :** aucun raccourci à une seule touche ne se déclenche, sauf s'il peut être désactivé ou reconfiguré, ou s'il ne fonctionne que sur le composant qui a le focus. |
+| **Titres de page et contournement des blocs** | Chaque page a un `<title>` descriptif ; les blocs répétés sur plusieurs pages peuvent être contournés par un lien d'évitement, des repères ou des titres | 2.4.2, 2.4.1 (A) | 1. Ouvrir plusieurs pages et lire le titre dans l'onglet du navigateur (ou écouter le lecteur d'écran au chargement de la page).<br>2. Recharger une page et appuyer une fois sur Tab : un lien « Aller au contenu principal » devrait apparaître ; appuyer sur Entrée.<br>3. S'il n'y a pas de lien d'évitement, ouvrir la liste des repères et la liste des titres du lecteur d'écran (voir les annexes C–E).<br>✅ **Réussi :** chaque titre décrit le sujet ou la finalité de la page (par exemple « Paiement – Étape 2 sur 3 – MonApp ») ; le lien d'évitement mène au contenu principal, ou les repères et les titres permettent de passer les blocs répétés. |
+| **Structure sémantique** | Les titres, repères, listes, en-têtes de tableaux de données, groupes de champs (`<fieldset>`/`<legend>`), associations d'étiquettes et champs obligatoires sont transmis par le code, et pas seulement visuellement | 1.3.1 (A) | 1. Ouvrir la liste des titres du lecteur d'écran, puis sa liste des repères (voir les annexes C–E).<br>2. Dans chaque tableau de données, se déplacer cellule par cellule avec les commandes de tableau du lecteur d'écran.<br>3. Dans chaque formulaire, entrer dans les champs avec Tab et écouter.<br>4. Dans les DevTools (panneau Elements, volet Accessibility), vérifier que ce qui ressemble à un titre, une liste ou un tableau utilise l'élément HTML correspondant.<br>✅ **Réussi :** chaque titre et chaque région visuels apparaissent dans les listes ; les en-têtes de colonne et de ligne sont lus avec chaque cellule ; chaque champ est lu avec son étiquette, son groupe (légende) et « obligatoire » le cas échéant. |
+| **Ordre de lecture cohérent** | L'ordre de lecture dans le code correspond au sens du contenu (par ex. le contexte avant les détails) | 1.3.2 (A) | 1. Avec le lecteur d'écran, lancer la lecture continue en haut de la page.<br>2. Suivre à l'écran et comparer l'ordre de lecture avec l'ordre visuel.<br>✅ **Réussi :** le contenu est lu dans un ordre qui a du sens : les étiquettes avant leurs champs, un statut avant ses détails, aucun texte d'une colonne lu au milieu d'une autre. |
+| **Alternatives textuelles** | Les images informatives, les contrôles composés d'une seule icône, les graphiques et les CAPTCHA ont une alternative textuelle qui remplit la même fonction ; les images décoratives sont masquées aux technologies d'assistance | 1.1.1 (A) | 1. Avec le lecteur d'écran, passer d'image en image (liste ou navigation par graphiques) et écouter chacune.<br>2. Dans les DevTools, vérifier que chaque `<img>` a un attribut `alt` (`alt=""` pour les images décoratives), et que chaque bouton composé d'une seule icône a un nom dans le volet Accessibility.<br>3. Pour chaque graphique ou schéma, chercher la même information sous forme de texte ou de tableau.<br>✅ **Réussi :** chaque image ou icône informative est annoncée avec un texte qui donne la même information ou la même fonction ; les images décoratives ne sont pas annoncées. |
+| **Audio et vidéo pré-enregistrés** | Les contenus audio seuls ont une transcription ; les vidéos seules ont une alternative textuelle ou audio ; les vidéos avec son ont des sous-titres synchronisés, ainsi qu'une audio-description ou une alternative textuelle complète | 1.2.1, 1.2.2, 1.2.3 (A) | 1. Lire chaque vidéo avec les sous-titres activés : ils doivent correspondre aux paroles et aux sons importants, au même moment.<br>2. Pour chaque vidéo, chercher une version audio-décrite ou une alternative textuelle complète qui décrit aussi les informations visuelles importantes.<br>3. Pour un contenu audio seul (par exemple un podcast), chercher une transcription ; pour une vidéo sans son, chercher une description textuelle ou une piste audio.<br>✅ **Réussi :** chaque média pré-enregistré dispose des alternatives indiquées ci-dessus. |
+| **Contenus en mouvement, qui flashent ou qui démarrent automatiquement** | Un contenu en mouvement, clignotant ou défilant pendant plus de 5 secondes, ou mis à jour automatiquement, peut être mis en pause, arrêté ou masqué ; un son qui démarre automatiquement et dure plus de 3 secondes peut être arrêté ou son volume réglé ; rien ne flashe plus de trois fois par seconde (sauf sous les seuils de flash) | 2.2.2, 1.4.2, 2.3.1 (A) | 1. Charger chaque page et attendre au moins 5 secondes ; lister tout ce qui bouge, clignote, défile ou se met à jour tout seul (carrousel, bandeau défilant, animation, fil en direct).<br>2. Pour chacun, trouver un bouton pause, arrêt ou masquer et l'utiliser au clavier.<br>3. Si un son démarre tout seul et dure plus de 3 secondes, trouver sur la page un contrôle pour l'arrêter ou baisser son volume.<br>4. Si quelque chose flashe plus de trois fois en une seconde, le vérifier avec un outil d'analyse du risque d'épilepsie photosensible (par exemple PEAT), ou le signaler pour la revue d'expert.<br>✅ **Réussi :** chaque élément de l'étape 1 peut être mis en pause, arrêté ou masqué ; le son automatique peut être arrêté ; rien ne flashe au-dessus des seuils. |
+| **Limites de temps** | Chaque limite de temps peut être désactivée, ajustée (au moins dix fois la durée par défaut) ou prolongée après un avertissement (au moins 20 secondes, action simple), sauf pour les limites en temps réel, essentielles ou de plus de 20 heures | 2.2.1 (A) | 1. Demander à l'équipe quelles limites de temps existent (expiration de session, étapes chronométrées, réservations conservées pendant un temps limité).<br>2. Déclencher chacune : rester inactif jusqu'à peu avant l'expiration (demander un environnement de test avec une expiration courte si nécessaire).<br>3. Vérifier qu'un avertissement apparaît, que le lecteur d'écran l'annonce, et qu'une action simple (par exemple un seul bouton) prolonge le temps.<br>✅ **Réussi :** chaque limite de temps peut être désactivée, ajustée ou prolongée avec au moins 20 secondes pour réagir, ou est une limite en temps réel, essentielle ou de plus de 20 heures. |
+| **Pas uniquement par la couleur ou les sens** | Les informations, états et instructions ne reposent pas uniquement sur la couleur, ni uniquement sur la forme, la taille, la position ou le son | 1.4.1, 1.3.3 (A) | 1. Dans les DevTools de Chrome, ouvrir Rendering > Emulate vision deficiencies > Achromatopsia (niveaux de gris).<br>2. Regarder les liens dans le texte, les erreurs de formulaire, les champs obligatoires, les graphiques et les indicateurs d'état.<br>3. Lire les instructions et chercher des références comme « le bouton vert », « le champ à droite » ou « quand vous entendez le bip ».<br>✅ **Réussi :** en niveaux de gris, toutes les informations et tous les états restent compréhensibles ; chaque instruction nomme aussi l'élément (par exemple « le bouton Envoyer »). |
+| **Fonction des liens et libellé dans le nom** | La fonction de chaque lien est claire d'après son texte ou son contexte ; le nom accessible des liens, boutons et contrôles contient leur texte visible | 2.4.4, 2.5.3 (A) | 1. Ouvrir la liste des liens du lecteur d'écran et lire chacun, avec sa phrase, son paragraphe ou sa cellule de tableau si nécessaire.<br>2. Pour chaque lien et bouton avec un texte visible, comparer ce texte avec le nom accessible dans les DevTools (panneau Elements, volet Accessibility, « Name »).<br>✅ **Réussi :** aucun lien n'est ambigu (« cliquez ici » sans contexte) ; chaque nom accessible contient le texte visible, idéalement au début. |
+| **Nom, rôle, valeur** | Tous les contrôles, natifs et personnalisés, exposent un nom, un rôle, ainsi que leurs états et valeurs (développé, sélectionné, coché, désactivé), et les changements sont transmis aux technologies d'assistance | 4.1.2 (A) | 1. Avec le lecteur d'écran, aller sur chaque contrôle avec Tab et écouter : il doit annoncer le nom, le type (bouton, case à cocher, onglet, menu…) et l'état (coché, développé, sélectionné, désactivé).<br>2. Changer l'état (ouvrir l'accordéon, cocher la case, sélectionner l'onglet) et écouter à nouveau.<br>3. Pour les composants personnalisés, vérifier le rôle et les états ARIA dans les DevTools (volet Accessibility).<br>✅ **Réussi :** chaque contrôle annonce son nom, son rôle et son état actuel, et le nouvel état est annoncé après chaque changement. |
+| **Étiquettes et instructions des formulaires** | Chaque champ a une étiquette ou des instructions visibles, y compris l'indication des champs obligatoires et des formats attendus | 3.3.2 (A) | 1. Regarder chaque formulaire sans le lecteur d'écran : chaque champ doit avoir une étiquette visible ; les champs obligatoires et les formats attendus (date, téléphone) doivent être indiqués avant la saisie, et pas seulement dans un texte indicatif (placeholder) qui disparaît pendant la frappe.<br>2. Parcourir le formulaire avec Tab et le lecteur d'écran.<br>✅ **Réussi :** chaque étiquette, indication d'obligation et format est visible et est aussi annoncé. |
+| **Identification des erreurs** | Les erreurs de saisie détectées automatiquement identifient le champ en erreur et décrivent l'erreur sous forme de texte | 3.3.1 (A) | 1. Soumettre chaque formulaire vide.<br>2. Le soumettre à nouveau avec des valeurs invalides (e-mail sans @, date au mauvais format).<br>3. Vérifier chaque erreur à l'écran et avec le lecteur d'écran.<br>✅ **Réussi :** chaque champ en erreur est identifié (message à côté du champ, ou nom du champ dans le message), et l'erreur est décrite sous forme de texte, pas seulement par une bordure rouge ou une icône. |
+| **Focus et saisie prévisibles** | Recevoir le focus ne provoque jamais de changement de contexte ; changer la valeur d'un champ non plus, sauf si l'utilisateur en a été averti au préalable | 3.2.1, 3.2.2 (A) | 1. Parcourir tous les contrôles avec Tab sans rien activer.<br>2. Changer les valeurs des listes déroulantes, boutons radio et cases à cocher au clavier (flèches, Espace), sans appuyer sur aucun bouton.<br>✅ **Réussi :** aucune nouvelle fenêtre ne s'ouvre, la page ne change pas, aucun formulaire n'est soumis et le focus ne saute pas. Pour les changements de valeur uniquement, c'est admis si un texte visible l'a annoncé au préalable. |
+| **Aide cohérente** | Les mécanismes d'aide répétés sur plusieurs pages (coordonnées, formulaire de contact ou chat, FAQ) apparaissent dans le même ordre par rapport au reste du contenu de la page | 3.2.6 (A) | 1. Lister les mécanismes d'aide du site (coordonnées, formulaire de contact, chat, lien vers la FAQ).<br>2. Ouvrir au moins trois pages où ils apparaissent et noter leur position par rapport au reste du contenu (par exemple « dans le pied de page, après les mentions légales »).<br>✅ **Réussi :** sur chaque page, ils apparaissent dans le même ordre par rapport au reste du contenu. |
+| **Saisie redondante** | Une information déjà saisie dans le même processus est pré-remplie ou sélectionnable, sauf si la ressaisie est essentielle, exigée pour la sécurité, ou si l'information n'est plus valide | 3.3.7 (A) | 1. Parcourir chaque processus en plusieurs étapes (inscription, commande, demande).<br>2. Noter chaque information demandée plus d'une fois (par exemple l'adresse à l'étape 2, puis à nouveau à l'étape 4).<br>✅ **Réussi :** l'information redemandée est pré-remplie ou proposée en sélection (par exemple « Identique à l'adresse de livraison »), sauf si la ressaisie est essentielle, nécessaire pour la sécurité (par exemple un mot de passe) ou si la valeur précédente n'est plus valide. |
+| **Gestes, annulation du pointeur et mouvement** | Les gestes multipoints ou basés sur un tracé ont une alternative à pointeur unique ; les actions ne se déclenchent pas à l'appui, ou peuvent être interrompues ou annulées ; les fonctions déclenchées par le mouvement ont une alternative par un contrôle et peuvent être désactivées | 2.5.1, 2.5.2, 2.5.4 (A) | 1. Sur un appareil tactile, lister chaque geste (pincer, balayer, appui à plusieurs doigts, dessin d'un tracé) et utiliser son alternative (bouton, lien, appui simple).<br>2. Appuyer sur un bouton avec la souris ou le doigt, maintenir l'appui, s'éloigner du bouton, puis relâcher.<br>3. Pour les fonctions déclenchées en secouant ou en inclinant l'appareil, chercher un bouton à l'écran et un réglage pour désactiver le mouvement.<br>✅ **Réussi :** chaque geste a une alternative par un appui ou un clic simple ; relâcher en dehors du bouton ne déclenche rien (ou l'action peut être annulée) ; chaque fonction liée au mouvement a un bouton et peut être désactivée. |
+| **Langue de la page** | La langue par défaut de chaque page est déclarée dans le code (`lang` sur `<html>`) | 3.1.1 (A) | 1. Dans les DevTools, sélectionner l'élément `<html>` et lire son attribut `lang` (par exemple `lang="fr"`).<br>2. Écouter le début de la page avec le lecteur d'écran.<br>✅ **Réussi :** l'attribut `lang` est présent et correspond à la langue de la page ; le lecteur d'écran utilise la bonne prononciation. |
 
 ---
 
 ### Critères légaux (niveau AA — conformité exigée)
 
-Cette section résume les exigences de niveau AA, qui constituent le niveau de référence légal pour l'accessibilité numérique (EN 301 549 pour les directives de l'UE, RGAA en France, eCH-0059 en Suisse). Leur application est requise pour assurer la conformité réglementaire et une expérience utilisateur fluide et autonome pour les personnes en situation de handicap. La conformité au niveau AA exige aussi tous les critères de niveau A du tableau précédent.
+Ce tableau couvre les 24 critères de succès de niveau AA des WCAG 2.2. Le niveau AA est le niveau exigé par les cadres juridiques présentés au chapitre 2 du support de cours : EN 301 549 pour les directives de l'UE (la V4.1.1 est alignée sur les WCAG 2.2), le RGAA 4.1.2 en France et l'eCH-0059 V3.0 en Suisse (tous deux encore basés sur les WCAG 2.1). La conformité au niveau AA exige aussi tous les critères de niveau A du tableau précédent.
 
-Ces critères vont au-delà des exigences de base du niveau A en couvrant des aspects essentiels tels que la navigation cohérente, la finalité des champs, les messages d'état, la visibilité du focus et la taille des cibles.
-
-| Critère | Description | WCAG | Comment vérifier | Test Xray | Étape(s) |
-| --- | --- | --- | --- | --- | --- |
-| **Annonces dynamiques** | Les mises à jour de contenu sont annoncées via `aria-live` ou `role="alert"` sans interrompre la lecture ni déplacer le focus | 4.1.3 (AA) | Déclencher des mises à jour et vérifier qu'elles sont annoncées | AFCXRAY-12126 | Étape 4 |
-| **Prévention des erreurs (juridiques, financières, données)** | Pour les soumissions ayant des conséquences juridiques ou financières, l'utilisateur peut annuler, vérifier ou confirmer la soumission avant sa finalisation | 3.3.4 (AA) | Déclencher une soumission juridique/financière/de données et vérifier qu'une étape de relecture, de correction ou de confirmation est proposée avant la finalisation | | |
-| **Orientation** | L'interface fonctionne correctement en orientation portrait et paysage | 1.3.4 (AA) | Tester sur un appareil mobile ou un simulateur dans les deux orientations | | |
-| **Navigation cohérente** | Les menus de navigation sont placés de manière cohérente d'une page à l'autre | 3.2.3 (AA) | Parcourir plusieurs pages et comparer l'emplacement des menus | | |
-| **Plusieurs moyens de trouver le contenu** | Plusieurs moyens permettent de trouver une page dans un ensemble de pages, par ex. une recherche plus un plan du site ou un menu de navigation | 2.4.5 (AA) | Vérifier la présence d'au moins deux moyens d'orientation indépendants (recherche, plan du site, menu, fil d'Ariane) | | |
-| **Identification cohérente** | Une même fonctionnalité porte le même libellé partout où elle apparaît | 3.2.4 (AA) | Vérifier les libellés de l'interface sur les composants équivalents | | |
-| **Finalité de la saisie** | Les champs qui recueillent des informations sur l'utilisateur exposent leur finalité avec `autocomplete` | 1.3.5 (AA) | Inspecter les valeurs `autocomplete` des champs de données personnelles dans les DevTools | | |
-| **Focus non masqué** | L'élément qui a le focus n'est jamais entièrement masqué par des en-têtes fixes, des bandeaux ou des superpositions | 2.4.11 (AA) | Parcourir la page à la touche Tab avec les éléments fixes et les bandeaux affichés | | |
-| **Mouvements de glisser** | Chaque action de glisser-déposer peut aussi être réalisée avec un pointeur unique sans glisser | 2.5.7 (AA) | Identifier chaque interaction de glisser et rechercher une alternative par clic/toucher | | |
-| **Taille des cibles (minimum)** | Les cibles de pointeur mesurent au moins 24 × 24 px CSS ou sont suffisamment espacées | 2.5.8 (AA) | Mesurer les petites cibles (icônes, liens dans des listes) dans les DevTools | | |
-| **Authentification accessible** | La connexion ne repose pas sur un test de fonction cognitive sans alternative ; les gestionnaires de mots de passe et le copier-coller fonctionnent | 3.3.8 (AA) | Se connecter avec un gestionnaire de mots de passe et par copier-coller | | |
+| Critère | Description | WCAG | Comment vérifier |
+| --- | --- | --- | --- |
+| **Focus visible et non masqué** | Un indicateur de focus visible est affiché sur chaque élément focalisable et n'est jamais supprimé par le CSS ; l'élément qui a le focus n'est jamais entièrement masqué par un en-tête fixe, un bandeau ou un widget de chat | 2.4.7, 2.4.11 (AA) | 1. Laisser affichés tous les éléments fixes (en-tête, bandeau de cookies, bouton de chat) : ne pas les fermer.<br>2. Parcourir toute la page avec Tab, jusqu'au pied de page, en observant l'indicateur de focus.<br>✅ **Réussi :** on voit toujours quel élément a le focus, et l'élément qui a le focus n'est jamais complètement caché derrière un en-tête fixe, un bandeau ou un widget (partiellement caché est admis au niveau AA). |
+| **Contraste** | Texte ≥ 4,5:1 (texte de grande taille ≥ 3:1) ; composants d'interface, indicateurs d'état, indicateurs de focus et graphiques porteurs de sens ≥ 3:1 par rapport aux couleurs adjacentes. Les composants désactivés, la décoration et les logos sont exemptés | 1.4.3, 1.4.11 (AA) | 1. Lancer un outil automatique (axe DevTools ou WAVE) pour trouver les défauts de contraste du texte.<br>2. Avec un outil de vérification du contraste (par exemple le WebAIM Contrast Checker, ou le ratio de contraste du sélecteur de couleur des DevTools), mesurer ce que l'outil automatique ne peut pas évaluer : texte sur image ou sur dégradé, bordures de champs, icônes, indicateurs de focus et éléments de graphiques, chacun par rapport à la couleur voisine.<br>3. Répéter pour les états survol, focus, erreur et sélectionné.<br>✅ **Réussi :** texte normal ≥ 4,5:1 ; texte de grande taille (≥ 24 px, ou ≥ 18,5 px en gras) ≥ 3:1 ; composants, états, indicateurs de focus et graphiques porteurs de sens ≥ 3:1. |
+| **Redimensionnement du texte** | Le texte peut être agrandi à 200 % sans perte de contenu ni de fonctionnalité | 1.4.4 (AA) | 1. Régler le zoom du navigateur à 200 % (Ctrl ou Cmd et +).<br>2. Parcourir chaque page et chaque composant (menus, dialogues, formulaires, tableaux).<br>✅ **Réussi :** tout le texte est agrandi, rien n'est coupé, masqué ni superposé, et chaque fonction marche toujours. |
+| **Reflow** | À 320 px CSS de large (zoom à 400 % dans une fenêtre de 1280 px CSS), le contenu se réorganise sans défilement horizontal et sans perte d'information ni de fonctionnalité ; les tableaux de données, cartes et schémas sont exemptés | 1.4.10 (AA) | 1. Régler la fenêtre du navigateur sur 1280 px de large et le zoom à 400 % ; ou bien utiliser la barre d'outils de simulation d'appareil des DevTools avec une largeur de 320 px et un zoom à 100 %.<br>2. Parcourir chaque page en défilant uniquement vers le haut et le bas.<br>✅ **Réussi :** on peut lire tout le contenu et utiliser chaque fonction sans défiler sur le côté ; seuls les tableaux de données, cartes et schémas peuvent défiler horizontalement. |
+| **Espacement du texte** | Augmenter la hauteur de ligne et l'espacement des paragraphes, des lettres et des mots aux valeurs du critère 1.4.12 ne provoque aucune perte de contenu ni de fonctionnalité | 1.4.12 (AA) | 1. Dans les DevTools, ajouter ces règles à la page : `* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }` (ou utiliser un bookmarklet d'espacement du texte).<br>2. Parcourir chaque page.<br>✅ **Réussi :** aucun texte n'est coupé, masqué ni superposé, et chaque fonction marche toujours. |
+| **Contenu au survol ou au focus** | Les infobulles, sous-menus et fenêtres contextuelles affichés au survol ou au focus peuvent être masqués sans déplacer le pointeur ni le focus, restent visibles lorsqu'on les survole, et restent affichés jusqu'à leur fermeture ou tant qu'ils sont pertinents | 1.4.13 (AA) | Pour chaque infobulle, sous-menu ou fenêtre contextuelle :<br>1. L'afficher avec la souris, puis au clavier (Tab).<br>2. Appuyer sur Échap (ou utiliser le mécanisme de fermeture prévu) : il doit se fermer sans déplacer le pointeur ni le focus.<br>3. L'afficher à nouveau avec la souris, puis déplacer le pointeur dessus : il doit rester visible.<br>4. Attendre sans bouger : il doit rester affiché jusqu'à ce qu'on s'éloigne ou qu'on le ferme.<br>✅ **Réussi :** les étapes 2 à 4 réussissent pour chacun. L'étape 2 n'est pas exigée si le contenu ne masque aucun autre contenu ou s'il signale une erreur de saisie ; les infobulles natives `title` sont exemptées. |
+| **Images de texte** | Le texte est du vrai texte, et non une image de texte, sauf les logos et les présentations essentielles | 1.4.5 (AA) | 1. Zoomer à 200 % : les images de texte deviennent floues, le vrai texte reste net.<br>2. Essayer de sélectionner à la souris le texte suspect.<br>3. Dans les DevTools, vérifier si l'élément est une `<img>`, une image SVG ou une image d'arrière-plan CSS.<br>✅ **Réussi :** tout le texte est du vrai texte, sauf les logos et les cas où la présentation visuelle exacte est essentielle. |
+| **Orientation** | L'interface fonctionne en portrait et en paysage, sauf si une orientation est essentielle | 1.3.4 (AA) | 1. Sur un téléphone ou une tablette, désactiver le verrouillage de la rotation.<br>2. Ouvrir chaque page en portrait, puis tourner l'appareil en paysage (et revenir).<br>✅ **Réussi :** le contenu s'affiche et fonctionne dans les deux orientations ; aucun message ne demande de tourner l'appareil, sauf si une orientation est essentielle. |
+| **Finalité de la saisie** | Les champs qui recueillent des informations sur l'utilisateur exposent leur finalité avec `autocomplete` | 1.3.5 (AA) | 1. Dans les DevTools, inspecter chaque champ qui demande des données personnelles de l'utilisateur (nom, e-mail, téléphone, adresse, date de naissance…).<br>2. Lire sa valeur `autocomplete` et vérifier qu'elle correspond à la donnée (par exemple `given-name`, `email`, `tel`, `postal-code`, `bday`).<br>3. Facultatif : avec des données de remplissage automatique enregistrées dans le navigateur, vérifier que le navigateur propose les bonnes valeurs.<br>✅ **Réussi :** chacun de ces champs a la valeur correcte de la liste WCAG « Input Purposes for User Interface Components ». |
+| **Messages d'état** | Les erreurs, confirmations, nombres de résultats et messages de chargement ou de progression qui apparaissent sans déplacer le focus sont annoncés par le lecteur d'écran | 4.1.3 (AA) | 1. Activer le lecteur d'écran.<br>2. Déclencher chaque message qui apparaît sans déplacer le focus : erreur de formulaire en ligne, confirmation « Enregistré », « 12 résultats trouvés » après une recherche ou un filtre, message de chargement, mise à jour du compteur du panier.<br>3. Ne pas déplacer le focus ; écouter.<br>✅ **Réussi :** chaque message est lu automatiquement. Si l'un ne l'est pas, vérifier dans les DevTools que son conteneur a `role="status"`, `role="alert"` ou `aria-live`, et que le conteneur est déjà présent dans la page (vide) avant l'insertion du message — `role="alert"` est généralement annoncé même s'il est injecté avec son message. |
+| **Suggestion et prévention des erreurs** | Les messages d'erreur suggèrent une correction lorsqu'elle est connue ; les soumissions ayant des conséquences juridiques ou financières, qui modifient ou suppriment des données de l'utilisateur, ou qui envoient des réponses à un test peuvent être annulées, vérifiées ou confirmées avant leur finalisation | 3.3.3, 3.3.4 (AA) | **Suggestion des erreurs :**<br>1. Saisir des valeurs erronées typiques (e-mail sans @, date au mauvais format, nombre hors limites) et soumettre.<br>2. Lire chaque message d'erreur.<br>✅ **Réussi :** lorsque le format ou la valeur attendus sont connus, le message les indique (par exemple « Saisissez la date au format JJ.MM.AAAA »).<br>**Prévention des erreurs :**<br>3. Lister les formulaires qui engagent l'utilisateur juridiquement ou financièrement (contrat, paiement, déclaration d'impôts), qui modifient ou suppriment ses données enregistrées (profil, suppression du compte), ou qui envoient des réponses à un test.<br>4. Remplir chacun et le soumettre.<br>✅ **Réussi :** au moins une de ces conditions est remplie : une page récapitulative permet de vérifier, corriger et confirmer les données avant la soumission finale ; ou les données sont vérifiées et les erreurs peuvent être corrigées avant la finalisation ; ou la soumission peut être annulée ensuite. |
+| **Titres et étiquettes descriptifs** | Les titres et les étiquettes décrivent le sujet ou la finalité de leur contenu | 2.4.6 (AA) | 1. Ouvrir la liste des titres du lecteur d'écran et lire les titres seuls, sans la page.<br>2. Parcourir les formulaires avec Tab et écouter les étiquettes seules.<br>✅ **Réussi :** chaque titre indique le sujet de sa section, et chaque étiquette indique ce qu'il faut saisir (pas de « Champ 1 », « Infos » ou « Détails » sans sujet). |
+| **Plusieurs moyens d'accès** | Plusieurs moyens (recherche, plan du site, menu) mènent à chaque page, sauf aux pages qui sont une étape d'un processus | 2.4.5 (AA) | 1. Choisir environ cinq pages du site qui ne sont pas une étape d'un processus.<br>2. Pour chacune, essayer de l'atteindre de deux manières différentes : menu principal, recherche, plan du site, liens depuis des pages liées, table des matières.<br>✅ **Réussi :** chaque page peut être atteinte d'au moins deux manières. |
+| **Navigation et identification cohérentes** | La navigation répétée apparaît dans le même ordre relatif sur chaque page ; les mêmes fonctions portent les mêmes libellés, icônes et noms accessibles | 3.2.3, 3.2.4 (AA) | 1. Ouvrir au moins trois pages qui partagent la même navigation.<br>2. Comparer les menus : les éléments doivent apparaître dans le même ordre relatif (des éléments peuvent être ajoutés ou retirés, pas réordonnés).<br>3. Comparer les fonctions présentes sur plusieurs pages (recherche, impression, téléchargement, fermeture, aide) : même libellé, même icône, même nom accessible.<br>✅ **Réussi :** aucun menu n'est réordonné et aucune fonction ne change de nom ou d'icône d'une page à l'autre. |
+| **Langue des passages** | Les passages dans une autre langue sont signalés avec `lang`, sauf les noms propres et les termes techniques | 3.1.2 (AA) | 1. Repérer les passages dans une langue différente de celle de la page (par exemple une citation en anglais sur une page en français, ou « Deutsch » et « Italiano » dans un sélecteur de langue).<br>2. Dans les DevTools, vérifier que chacun a un attribut `lang` (par exemple `lang="de"`).<br>3. Écouter avec le lecteur d'écran : la prononciation doit changer.<br>✅ **Réussi :** chaque passage dans une autre langue est signalé, sauf les noms propres, les termes techniques et les mots couramment utilisés dans la langue de la page. |
+| **Sous-titres en direct et audio-description** | Les vidéos en direct ont des sous-titres ; les vidéos pré-enregistrées ont une audio-description des informations visuelles importantes | 1.2.4, 1.2.5 (AA) | 1. Pour les diffusions en direct (webinaires, événements), activer les sous-titres pendant une diffusion et vérifier qu'ils apparaissent en temps réel.<br>2. Pour chaque vidéo pré-enregistrée, chercher une piste d'audio-description ou une version audio-décrite ; la lire et vérifier qu'elle décrit les informations visuelles importantes (texte à l'écran, actions, changements de scène).<br>✅ **Réussi :** les vidéos en direct ont des sous-titres ; les vidéos pré-enregistrées ont une audio-description, sauf si la bande-son transmet déjà toutes les informations visuelles importantes. |
+| **Glisser et taille des cibles** | Chaque action de glisser a une alternative à pointeur unique sans glisser ; les cibles mesurent au moins 24 × 24 px CSS ou sont suffisamment espacées (voir le thème 16 pour les exceptions) | 2.5.7, 2.5.8 (AA) | **Glisser :**<br>1. Lister chaque interaction de glisser (liste réordonnable, curseur, zone de dépôt de fichiers, carte, tableau kanban).<br>2. Réaliser la même action uniquement par des clics ou appuis simples (par exemple un bouton « Monter », un clic sur la piste du curseur, un bouton « Parcourir »).<br>**Taille des cibles :**<br>3. Dans les DevTools, survoler les petites cibles (icônes, boutons de fermeture, liens dans des listes, pagination) avec l'outil de sélection d'élément : il affiche leur largeur × hauteur.<br>✅ **Réussi :** chaque action de glisser a une alternative par clic ou appui ; chaque cible mesure au moins 24 × 24 px CSS, ou est espacée comme décrit au thème 16, ou fait partie de ses exceptions (par exemple un lien dans une phrase). |
+| **Authentification accessible** | La connexion ne repose pas sur un test de fonction cognitive sans alternative ni mécanisme d'assistance ; les gestionnaires de mots de passe et le copier-coller fonctionnent | 3.3.8 (AA) | 1. Enregistrer le compte de test dans un gestionnaire de mots de passe et se connecter avec le remplissage automatique.<br>2. Se déconnecter, copier le mot de passe et le coller dans le champ du mot de passe.<br>3. S'il y a une étape avec un code (code reçu par SMS ou par e-mail, mot de passe à usage unique), vérifier qu'on peut coller le code, ou qu'une alternative existe (par exemple un lien de connexion dans l'e-mail).<br>4. S'il y a un CAPTCHA ou une énigme, vérifier qu'une alternative existe qui n'exige ni de recopier ni de résoudre quoi que ce soit (reconnaître des objets est admis au niveau AA).<br>✅ **Réussi :** la connexion fonctionne avec le gestionnaire de mots de passe et avec le collage, et aucune étape n'exige de mémoriser, de recopier ou de résoudre quelque chose sans alternative. |
 
 ---
 
 ### Critères d'excellence (niveau AAA et bonnes pratiques — optimisation)
 
-Cette section présente les exigences de niveau AAA et des bonnes pratiques qui ne sont pas des exigences WCAG, qui visent une accessibilité optimale et une expérience utilisateur exceptionnelle. Contrairement aux niveaux A et AA, ces critères ne sont pas imposés par la réglementation, mais leur mise en œuvre est fortement recommandée pour dépasser les standards légaux et répondre aux besoins les plus exigeants.
+Cette section présente une sélection de critères de niveau AAA et de bonnes pratiques qui ne sont pas des exigences WCAG, qui visent une accessibilité optimale et une expérience utilisateur exceptionnelle. Contrairement aux niveaux A et AA, ces critères ne sont pas imposés par la réglementation, et les WCAG ne recommandent pas d'exiger le niveau AAA comme politique générale pour des sites entiers. Appliqués critère par critère lorsque le contenu le permet, ils améliorent le confort de tous, y compris des utilisateurs ayant des besoins spécifiques ou complexes.
 
-Bien que leur mise en œuvre puisse représenter un défi technique ou organisationnel, ces critères permettent d'atteindre un niveau d'inclusion remarquable, garantissant un confort d'utilisation maximal pour tous, y compris pour les utilisateurs ayant des besoins spécifiques ou complexes. Ils marquent un engagement proactif en faveur d'une accessibilité exemplaire.
-
-| Critère | Description | WCAG | Comment vérifier | Test Xray | Étape(s) |
-| --- | --- | --- | --- | --- | --- |
-| **Indicateurs de progression** | Les processus en plusieurs étapes indiquent clairement l'étape en cours | 2.4.8 (AAA) | Parcourir les workflows et vérifier l'annonce de la progression | AFCXRAY-12127 | Étape 7 |
-| **Aide contextuelle** | Une aide et des infobulles accessibles sont disponibles pour les fonctionnalités complexes | 3.3.5 (AAA) | Tester l'accessibilité des infobulles et des bulles d'aide | AFCXRAY-12127 | Étape 8 |
-| **Taille des cibles (amélioré)** | Les cibles interactives mesurent au moins 44 × 44 px CSS | 2.5.5 (AAA) | Inspecter les éléments interactifs critiques | | |
-| **Lisibilité générale** | L'interface est globalement claire et facile à lire | 3.1.5 (AAA, apparenté) | Effectuer une revue visuelle générale | | |
-| **Liens externes identifiés** | Les liens qui ouvrent un nouvel onglet ou un site externe sont annoncés comme tels | — (bonne pratique, pas une exigence WCAG) | Tester tous les liens et vérifier que le contexte est clair | AFCXRAY-12126 | Étape 2 |
+| Critère | Description | WCAG | Comment vérifier |
+| --- | --- | --- | --- |
+| **Fonction du lien (lien seul)** | La fonction de chaque lien est claire d'après le seul texte du lien | 2.4.9 (AAA) | 1. Ouvrir la liste des liens du lecteur d'écran (elle affiche les textes des liens sans leur contexte).<br>2. Lire chaque lien.<br>✅ **Réussi :** chaque lien est compréhensible seul (par exemple « Télécharger le rapport annuel 2026 (PDF) » plutôt que « Télécharger »). |
+| **Localisation et progression** | L'utilisateur sait où il se trouve dans le site (fil d'Ariane, élément courant de la navigation avec `aria-current`) et dans un processus en plusieurs étapes (« Étape 2 sur 4 ») | 2.4.8 (AAA) pour la localisation dans un ensemble de pages ; indicateurs d'étapes : bonne pratique | 1. Sur plusieurs pages, vérifier qu'on peut savoir où l'on se trouve : fil d'Ariane, élément courant mis en évidence dans le menu, titre de la page.<br>2. Avec le lecteur d'écran, vérifier que l'élément courant du menu est annoncé comme « actuel ».<br>3. Dans chaque processus en plusieurs étapes, vérifier que l'étape en cours et le nombre total d'étapes sont affichés et annoncés (par exemple « Étape 2 sur 4 : Adresse »).<br>✅ **Réussi :** la localisation et la progression sont visibles et annoncées. |
+| **Aide contextuelle** | Une aide est disponible là où les utilisateurs en ont besoin (texte d'aide, lien d'aide, infobulle à côté des champs complexes) | 3.3.5 (AAA) | 1. Identifier les champs et fonctions complexes (par exemple IBAN, codes fiscaux, formats de fichiers acceptés).<br>2. Vérifier qu'un texte d'aide, un lien d'aide ou un bouton d'aide se trouve à côté.<br>3. Ouvrir l'aide au clavier et avec le lecteur d'écran.<br>✅ **Réussi :** une aide est disponible à côté de chaque champ ou fonction complexe, et elle peut être atteinte et lue au clavier et avec le lecteur d'écran. |
+| **Mots rares et abréviations** | Le jargon, les termes techniques et les abréviations sont définis ou développés | 3.1.3, 3.1.4 (AAA) | 1. Demander à une personne extérieure au projet, ou nouvelle dans le domaine métier, de lire les pages principales et de noter chaque mot ou abréviation qu'elle ne comprend pas.<br>2. Pour chacun, chercher une définition ou une forme développée : à la première occurrence, dans un glossaire, ou avec `<abbr title="">`.<br>✅ **Réussi :** chaque terme noté à l'étape 1 est défini ou développé. |
+| **Niveau de lecture** | Un texte qui exige un niveau de lecture supérieur au premier cycle du secondaire a une version plus simple ou un contenu complémentaire | 3.1.5 (AAA) | 1. Coller les textes principaux (instructions, messages d'erreur, aide) dans un outil de lisibilité adapté à la langue du contenu.<br>2. Pour les textes au-dessus du niveau du premier cycle du secondaire, chercher une version plus simple, un résumé ou des illustrations.<br>✅ **Réussi :** chaque texte au-dessus de ce niveau a une version plus simple ou un contenu complémentaire. |
+| **Taille des cibles (renforcé)** | Les cibles interactives mesurent au moins 44 × 44 px CSS | 2.5.5 (AAA) | 1. Dans les DevTools, survoler chaque élément interactif avec l'outil de sélection d'élément et lire sa largeur × hauteur.<br>✅ **Réussi :** chaque cible mesure au moins 44 × 44 px CSS, sauf les liens dans le texte, les cibles qui ont un contrôle équivalent de cette taille sur la même page, les contrôles par défaut du navigateur et les présentations essentielles. |
+| **Interruptions et mises à jour automatiques** | Les pop-ups, actualisations automatiques et mises à jour de contenu peuvent être reportées ou supprimées, sauf en cas d'urgence | 2.2.4 (AAA) | 1. Rester quelques minutes sur des pages qui affichent des notifications ou des pop-ups, ou qui s'actualisent toutes seules (tableaux de bord, boîtes de réception).<br>2. Chercher un moyen de les reporter ou de les désactiver (par exemple « Suspendre les mises à jour », réglages des notifications).<br>✅ **Réussi :** chaque interruption qui n'est pas une urgence peut être reportée ou désactivée. |
+| **Changements sur demande et nouvelles fenêtres** | Les changements de contexte ne se produisent qu'à la demande de l'utilisateur ; les liens qui ouvrent une nouvelle fenêtre ou un nouvel onglet l'indiquent dans leur texte | 3.2.5 (AAA) | 1. Activer chaque lien et contrôle qui ouvre une nouvelle fenêtre ou un nouvel onglet.<br>2. Rester sur les pages sans agir et observer s'il y a des actualisations ou des redirections automatiques.<br>✅ **Réussi :** chaque lien qui ouvre une nouvelle fenêtre ou un nouvel onglet l'indique dans son texte (par exemple « (s'ouvre dans un nouvel onglet) », technique W3C H83) ; aucune actualisation ni redirection ne se produit sans action de l'utilisateur. |
+| **Pas de limite de temps** | Aucune limite de temps n'est imposée, sauf pour les médias synchronisés non interactifs et les événements en temps réel | 2.2.3 (AAA) | 1. Demander à l'équipe la liste des limites de temps (la même liste que pour le critère 2.2.1).<br>✅ **Réussi :** aucune limite de temps n'existe, sauf dans les médias synchronisés non interactifs et les événements en temps réel (par exemple une enchère en direct). |
+| **Hiérarchie des titres** | Un seul H1 par page et aucun niveau de titre sauté | — (bonne pratique, pas une exigence WCAG) | 1. Ouvrir la liste des titres du lecteur d'écran, ou utiliser une extension de navigateur qui affiche le plan des titres.<br>2. Vérifier les niveaux de titres.<br>✅ **Réussi :** exactement un H1 par page, et aucun niveau sauté (par exemple pas de H2 suivi directement d'un H4). |
 
 ---
 
